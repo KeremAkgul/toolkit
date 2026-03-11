@@ -1,7 +1,8 @@
 services:
   networktoolkit:
     build: .
-    network_mode: host
+    ports:
+      - "3000:3000"
     cap_add:
       - NET_ADMIN
       - NET_RAW
