@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Network Toolkit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: #161b22;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar-header {
+      padding: 20px 16px 14px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    #sidebar-header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #58a6ff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    #sidebar-header p {
+      font-size: 11px;
+      color: #6e7681;
+      margin-top: 2px;
+    }
+
+    #menu {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+    }
+
+    .menu-section {
+      padding: 8px 16px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #6e7681;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #8b949e;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .menu-item:hover {
+      background: #1f2937;
+      color: #c9d1d9;
+    }
+
+    .menu-item.active {
+      background: #1f2937;
+      color: #58a6ff;
+      border-left-color: #58a6ff;
+    }
+
+    .menu-item .icon {
+      font-size: 15px;
+      width: 18px;
+      text-align: center;
+    }
+
+    /* ── Main Content ── */
+    #main {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-page {
+      display: none;
+      flex: 1;
+      padding: 28px 32px;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .tool-page.active {
+      display: flex;
+    }
+
+    .tool-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #e6edf3;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .tool-title span {
+      font-size: 13px;
+      font-weight: 400;
+      color: #6e7681;
+      margin-left: 10px;
+    }
+
+    /* ── Handshake Tool ── */
+    .hs-layout {
+      display: flex;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .hs-visual-panel {
+      flex: 1;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 420px;
+    }
+
+    .hs-actors {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 0 40px;
+    }
+
+    .actor {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .actor-box {
+      width: 90px;
+      height: 56px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .actor-box.client {
+      background: #1a3a5c;
+      border: 1.5px solid #58a6ff;
+      color: #58a6ff;
+    }
+
+    .actor-box.server {
+      background: #1a3a2a;
+      border: 1.5px solid #3fb950;
+      color: #3fb950;
+    }
+
+    .actor-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      transition: all 0.3s;
+    }
+
+    .actor-status.active-state {
+      background: #1a3a5c;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+
+    /* Packet animation area */
+    .hs-track {
+      flex: 1;
+      position: relative;
+      min-height: 220px;
+    }
+
+    .track-line {
+      position: absolute;
+      top: 50%;
+      left: 40px;
+      right: 40px;
+      height: 1px;
+      background: #30363d;
+      transform: translateY(-50%);
+    }
+
+    .track-timeline {
+      position: absolute;
+      top: 0; left: 40px; right: 40px; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    .packet-row {
+      display: flex;
+      align-items: center;
+      position: relative;
+      height: 36px;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .packet-row.visible { opacity: 1; }
+
+    .packet-arrow {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .packet-line {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, currentColor 20%);
+    }
+
+    .packet-label {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .packet-tip {
+      width: 0;
+      height: 0;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+    }
+
+    /* SYN: client -> server (left to right) */
+    .pkt-syn { color: #58a6ff; }
+    .pkt-syn .packet-label { background: #1a3a5c; color: #58a6ff; border: 1px solid #58a6ff; }
+    .pkt-syn .packet-line { background: linear-gradient(90deg, #58a6ff, transparent 80%); }
+    .pkt-syn .packet-tip { border-left: 10px solid #58a6ff; margin-left: -2px; }
+
+    /* SYN-ACK: server -> client (right to left) */
+    .pkt-synack { color: #3fb950; }
+    .pkt-synack .packet-label { background: #1a3a2a; color: #3fb950; border: 1px solid #3fb950; }
+    .pkt-synack .packet-line { background: linear-gradient(270deg, #3fb950, transparent 80%); }
+    .pkt-synack .packet-tip { border-right: 10px solid #3fb950; margin-right: -2px; }
+
+    /* ACK: client -> server */
+    .pkt-ack { color: #d2a679; }
+    .pkt-ack .packet-label { background: #2d2011; color: #d2a679; border: 1px solid #d2a679; }
+    .pkt-ack .packet-line { background: linear-gradient(90deg, #d2a679, transparent 80%); }
+    .pkt-ack .packet-tip { border-left: 10px solid #d2a679; margin-left: -2px; }
+
+    /* FIN: client -> server */
+    .pkt-fin { color: #f85149; }
+    .pkt-fin .packet-label { background: #3a1a1a; color: #f85149; border: 1px solid #f85149; }
+    .pkt-fin .packet-line { background: linear-gradient(90deg, #f85149, transparent 80%); }
+    .pkt-fin .packet-tip { border-left: 10px solid #f85149; margin-left: -2px; }
+
+    /* ── Controls Panel ── */
+    .hs-controls-panel {
+      width: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .hs-state-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6e7681;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .state-display {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 6px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      text-align: center;
+      transition: all 0.3s;
+      letter-spacing: 0.5px;
+    }
+
+    .state-display.state-closed    { color: #6e7681; }
+    .state-display.state-syn-sent  { color: #58a6ff; background: #1a3a5c22; border-color: #58a6ff44; }
+    .state-display.state-established { color: #3fb950; background: #1a3a2a22; border-color: #3fb95044; }
+    .state-display.state-fin-wait  { color: #f85149; background: #3a1a1a22; border-color: #f8514944; }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-syn {
+      background: #1a3a5c;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+    .btn-syn:not(:disabled):hover { background: #1f4d7a; }
+
+    .btn-synack {
+      background: #1a3a2a;
+      border-color: #3fb950;
+      color: #3fb950;
+    }
+    .btn-synack:not(:disabled):hover { background: #234d30; }
+
+    .btn-fin {
+      background: #3a1a1a;
+      border-color: #f85149;
+      color: #f85149;
+    }
+    .btn-fin:not(:disabled):hover { background: #4d2020; }
+
+    .btn-reset {
+      background: #21262d;
+      border-color: #30363d;
+      color: #8b949e;
+    }
+    .btn-reset:not(:disabled):hover { background: #2d333b; color: #c9d1d9; }
+
+    .btn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ── Log Panel ── */
+    .hs-log {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      padding: 3px 0;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      gap: 10px;
+    }
+
+    .log-entry:last-child { border-bottom: none; }
+
+    .log-time { color: #6e7681; min-width: 70px; }
+
+    .log-syn    { color: #58a6ff; }
+    .log-synack { color: #3fb950; }
+    .log-ack    { color: #d2a679; }
+    .log-fin    { color: #f85149; }
+    .log-info   { color: #8b949e; }
+    .log-ok     { color: #3fb950; }
+
+    /* Packet info boxes */
+    .pkt-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .pkt-info-box {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+
+    .pkt-info-box .pkt-info-label {
+      color: #6e7681;
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+
+    .pkt-info-box .pkt-info-val {
+      color: #c9d1d9;
+      font-weight: 600;
+    }
+
+    /* ── Mode Toggle ── */
+    .mode-toggle {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-mode {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 5px;
+      border: 1px solid #30363d;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #21262d;
+      color: #6e7681;
+      transition: all 0.15s;
+    }
+
+    .btn-mode.active-sim {
+      background: #1a3a5c;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+
+    .btn-mode.active-real {
+      background: #1a3a2a;
+      border-color: #3fb950;
+      color: #3fb950;
+    }
+
+    /* ── Input fields ── */
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-field {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      color: #c9d1d9;
+      font-size: 12px;
+      padding: 7px 10px;
+      width: 100%;
+      outline: none;
+      font-family: 'Courier New', monospace;
+      transition: border-color 0.15s;
+    }
+
+    .input-field:focus {
+      border-color: #58a6ff;
+    }
+
+    .input-field::placeholder {
+      color: #484f58;
+    }
+
+    .input-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #6e7681;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .real-only { display: none; }
+
+    /* ── Status badge ── */
+    .backend-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid #30363d;
+      color: #6e7681;
+      background: #21262d;
+      display: inline-block;
+      margin-top: 6px;
+    }
+
+    .backend-badge.ok  { color: #3fb950; border-color: #3fb95055; background: #1a3a2a55; }
+    .backend-badge.err { color: #f85149; border-color: #f8514955; background: #3a1a1a55; }
+
+    /* Welcome page */
+    .welcome-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 16px;
+      color: #6e7681;
+    }
+
+    .welcome-page h2 {
+      font-size: 22px;
+      color: #30363d;
+    }
+
+    .welcome-page p {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h1>Net Toolkit</h1>
+    <p>Network Analysis Suite</p>
+  </div>
+  <nav id="menu">
+    <div class="menu-section">Protokoller</div>
+    <div class="menu-item active" data-page="handshake">
+      <span class="icon">&#x1F4E1;</span>
+      TCP 3-Way Handshake
+    </div>
+    <!-- Yeni araçlar buraya eklenecek -->
+  </nav>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div id="main">
+
+  <!-- ── Welcome (fallback) ── -->
+  <div class="welcome-page" id="page-welcome" style="display:none;">
+    <h2>Network Toolkit</h2>
+    <p>Sol menuden bir arac secin.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TCP THREE-WAY HANDSHAKE
+  ══════════════════════════════════════════ -->
+  <div class="tool-page active" id="page-handshake">
+    <div class="tool-title">
+      TCP Three-Way Handshake Simulasyonu
+      <span>RFC 793 — Baglanti kurma & kapatma</span>
+    </div>
+
+    <div class="hs-layout">
+
+      <!-- Visual + Log -->
+      <div style="flex:1; display:flex; flex-direction:column; gap:16px;">
+
+        <!-- Diagram -->
+        <div class="hs-visual-panel">
+          <div class="hs-actors">
+            <div class="actor">
+              <div class="actor-box client">CLIENT</div>
+              <div class="actor-status" id="client-state">CLOSED</div>
+            </div>
+            <div class="actor">
+              <div class="actor-box server">SERVER</div>
+              <div class="actor-status" id="server-state">LISTEN</div>
+            </div>
+          </div>
+
+          <div class="hs-track">
+            <div class="track-line"></div>
+            <div class="track-timeline" id="timeline">
+
+              <!-- SYN row -->
+              <div class="packet-row pkt-syn" id="row-syn">
+                <div class="packet-arrow" style="left:40px; right:40px;">
+                  <div class="packet-line"></div>
+                  <div class="packet-tip"></div>
+                </div>
+                <div class="packet-label" style="left:50%; transform:translateX(-50%); top:-18px; position:absolute;">
+                  SYN &nbsp;|&nbsp; seq=0
+                </div>
+              </div>
+
+              <!-- SYN-ACK row -->
+              <div class="packet-row pkt-synack" id="row-synack">
+                <div class="packet-arrow" style="left:40px; right:40px; flex-direction:row-reverse;">
+                  <div class="packet-line" style="background: linear-gradient(270deg, #3fb950, transparent 80%);"></div>
+                  <div class="packet-tip" style="border-right:10px solid #3fb950; border-left:none;"></div>
+                </div>
+                <div class="packet-label" style="left:50%; transform:translateX(-50%); top:-18px; position:absolute; background:#1a3a2a; color:#3fb950; border:1px solid #3fb950;">
+                  SYN-ACK &nbsp;|&nbsp; seq=0, ack=1
+                </div>
+              </div>
+
+              <!-- ACK row -->
+              <div class="packet-row pkt-ack" id="row-ack">
+                <div class="packet-arrow" style="left:40px; right:40px;">
+                  <div class="packet-line"></div>
+                  <div class="packet-tip"></div>
+                </div>
+                <div class="packet-label" style="left:50%; transform:translateX(-50%); top:-18px; position:absolute;">
+                  ACK &nbsp;|&nbsp; ack=1
+                </div>
+              </div>
+
+              <!-- FIN row -->
+              <div class="packet-row pkt-fin" id="row-fin">
+                <div class="packet-arrow" style="left:40px; right:40px;">
+                  <div class="packet-line"></div>
+                  <div class="packet-tip"></div>
+                </div>
+                <div class="packet-label" style="left:50%; transform:translateX(-50%); top:-18px; position:absolute;">
+                  FIN &nbsp;|&nbsp; seq=1
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Packet Detail -->
+        <div class="hs-state-card" id="pkt-detail" style="display:none;">
+          <div class="card-title">Son Paket Detayi</div>
+          <div class="pkt-info-grid" id="pkt-detail-grid"></div>
+        </div>
+
+        <!-- Log -->
+        <div class="hs-log" id="log-panel" style="max-height:160px;">
+          <!-- log entries injected here -->
+        </div>
+
+      </div>
+
+      <!-- Controls -->
+      <div class="hs-controls-panel">
+
+        <!-- Mode toggle -->
+        <div class="hs-state-card">
+          <div class="card-title">Mod</div>
+          <div class="mode-toggle">
+            <button class="btn-mode active-sim" id="btn-mode-sim" onclick="setMode('sim')">Simulasyon</button>
+            <button class="btn-mode" id="btn-mode-real" onclick="setMode('real')">Gercek</button>
+          </div>
+          <div id="backend-status" class="backend-badge" style="display:none;"></div>
+        </div>
+
+        <!-- Target inputs (real mode only) -->
+        <div class="hs-state-card real-only" id="card-target">
+          <div class="card-title">Hedef</div>
+          <div class="input-row">
+            <div class="input-group">
+              <div class="input-label">IP Adresi</div>
+              <input class="input-field" id="input-ip" type="text" placeholder="1.1.1.1" spellcheck="false" />
+            </div>
+            <div class="input-group">
+              <div class="input-label">Port</div>
+              <input class="input-field" id="input-port" type="number" min="1" max="65535" placeholder="80" />
+            </div>
+          </div>
+        </div>
+
+        <div class="hs-state-card">
+          <div class="card-title">Baglanti Durumu</div>
+          <div class="state-display state-closed" id="conn-state">CLOSED</div>
+        </div>
+
+        <div class="hs-state-card">
+          <div class="card-title">Islemler</div>
+          <div class="btn-group">
+            <button class="btn btn-syn" id="btn-syn" onclick="sendSYN()">
+              <div class="btn-dot"></div>
+              SYN Gonder (istemci)
+            </button>
+            <button class="btn btn-synack" id="btn-synack" disabled onclick="sendSYNACK()">
+              <div class="btn-dot"></div>
+              <span id="label-synack">SYN-ACK Al / Gonder</span>
+            </button>
+            <button class="btn btn-fin" id="btn-fin" disabled onclick="sendFIN()">
+              <div class="btn-dot"></div>
+              FIN Gonder (kapat)
+            </button>
+            <button class="btn btn-reset" id="btn-reset" onclick="resetHS()">
+              &#8635; Sifirla
+            </button>
+          </div>
+        </div>
+
+        <div class="hs-state-card">
+          <div class="card-title">TCP Flags</div>
+          <div class="pkt-info-grid">
+            <div class="pkt-info-box">
+              <div class="pkt-info-label">SYN</div>
+              <div class="pkt-info-val" id="flag-syn">0</div>
+            </div>
+            <div class="pkt-info-box">
+              <div class="pkt-info-label">ACK</div>
+              <div class="pkt-info-val" id="flag-ack">0</div>
+            </div>
+            <div class="pkt-info-box">
+              <div class="pkt-info-label">FIN</div>
+              <div class="pkt-info-val" id="flag-fin">0</div>
+            </div>
+            <div class="pkt-info-box">
+              <div class="pkt-info-label">RST</div>
+              <div class="pkt-info-val" id="flag-rst">0</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- /page-handshake -->
+
+</div><!-- /main -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   MENU NAVİGATİON
+═══════════════════════════════════════════════ */
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.tool-page').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    const page = document.getElementById('page-' + item.dataset.page);
+    if (page) page.classList.add('active');
+  });
+});
+
+/* ═══════════════════════════════════════════════
+   MODE & BACKEND
+═══════════════════════════════════════════════ */
+let mode      = 'sim';   // 'sim' | 'real'
+let sessionId = null;
+const BACKEND = '';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-mode-sim').className  = 'btn-mode' + (m === 'sim' ? ' active-sim' : '');
+  document.getElementById('btn-mode-real').className = 'btn-mode' + (m === 'real' ? ' active-real' : '');
+
+  document.querySelectorAll('.real-only').forEach(el => {
+    el.style.display = m === 'real' ? '' : 'none';
+  });
+
+  const label = document.getElementById('label-synack');
+  label.textContent = m === 'real' ? 'ACK Gonder' : 'SYN-ACK Al / Gonder';
+
+  if (m === 'real') checkBackend();
+  else document.getElementById('backend-status').style.display = 'none';
+
+  resetHS();
+}
+
+async function checkBackend() {
+  const badge = document.getElementById('backend-status');
+  badge.style.display = 'inline-block';
+  badge.className = 'backend-badge';
+  badge.textContent = 'backend kontrol ediliyor…';
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(BACKEND + '/api/health', { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (r.ok) {
+      badge.className = 'backend-badge ok';
+      badge.textContent = 'backend: HAZIR';
+    } else {
+      throw new Error('non-ok');
+    }
+  } catch {
+    badge.className = 'backend-badge err';
+    badge.textContent = 'backend: KAPALI';
+  }
+}
+
+async function callBackend(endpoint, body) {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(BACKEND + endpoint, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+      signal:  ctrl.signal,
+    });
+    clearTimeout(tid);
+    if (!r.ok) {
+      const txt = await r.text();
+      return { status: 'error', message: `HTTP ${r.status}: ${txt}` };
+    }
+    return await r.json();
+  } catch (e) {
+    clearTimeout(tid);
+    if (e.name === 'AbortError') return { status: 'timeout', message: 'istek zaman asimi' };
+    return { status: 'error', message: e.message };
+  }
+}
+
+function renderPacketDetail(pkt, label) {
+  if (!pkt || !pkt.src_ip) return;
+  showDetail([
+    ['Yon',          label],
+    ['Kaynak',       `${pkt.src_ip}:${pkt.src_port}`],
+    ['Hedef',        `${pkt.dst_ip}:${pkt.dst_port}`],
+    ['Sequence No',  pkt.seq],
+    ['Ack No',       pkt.ack],
+    ['Flags',        pkt.flags],
+    ['Window',       pkt.window],
+    ['TTL',          pkt.ttl],
+  ]);
+}
+
+function updateDiagramLabel(rowId, text) {
+  const label = document.querySelector(`#${rowId} .packet-label`);
+  if (label) label.innerHTML = text;
+}
+
+/* ═══════════════════════════════════════════════
+   TCP HANDSHAKE SIMULATION
+═══════════════════════════════════════════════ */
+let hsStep = 0; // 0=CLOSED, 1=SYN_SENT, 2=ESTABLISHED, 3=FIN_WAIT
+
+function now() {
+  return new Date().toLocaleTimeString('tr-TR', { hour12: false });
+}
+
+function log(msg, cls) {
+  const panel = document.getElementById('log-panel');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">[${now()}]</span><span class="${cls}">${msg}</span>`;
+  panel.appendChild(entry);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function showPacketRow(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('visible');
+}
+
+function setConnState(label, cls) {
+  const el = document.getElementById('conn-state');
+  el.textContent = label;
+  el.className = 'state-display ' + cls;
+}
+
+function setActorState(actorId, label, active) {
+  const el = document.getElementById(actorId);
+  el.textContent = label;
+  el.className = 'actor-status' + (active ? ' active-state' : '');
+}
+
+function setFlags(syn, ack, fin, rst) {
+  document.getElementById('flag-syn').textContent = syn;
+  document.getElementById('flag-ack').textContent = ack;
+  document.getElementById('flag-fin').textContent = fin;
+  document.getElementById('flag-rst').textContent = rst;
+}
+
+function showDetail(fields) {
+  const card = document.getElementById('pkt-detail');
+  const grid = document.getElementById('pkt-detail-grid');
+  card.style.display = '';
+  grid.innerHTML = fields.map(([label, val]) =>
+    `<div class="pkt-info-box">
+       <div class="pkt-info-label">${label}</div>
+       <div class="pkt-info-val">${val}</div>
+     </div>`
+  ).join('');
+}
+
+function setBusy(busy) {
+  ['btn-syn','btn-synack','btn-fin','btn-reset'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (busy) { btn._prevDisabled = btn.disabled; btn.disabled = true; }
+    else       { btn.disabled = btn._prevDisabled || false; }
+  });
+}
+
+/* ── sendSYN ─────────────────────────────────────────────────── */
+async function sendSYN() {
+  if (hsStep !== 0) return;
+
+  if (mode === 'real') {
+    const dstIp   = document.getElementById('input-ip').value.trim();
+    const dstPort = parseInt(document.getElementById('input-port').value, 10);
+
+    if (!dstIp) { log('Hata: IP adresi giriniz.', 'log-fin'); return; }
+    if (!dstPort || dstPort < 1 || dstPort > 65535) { log('Hata: Gecerli port giriniz (1-65535).', 'log-fin'); return; }
+
+    setBusy(true);
+    log(`Gercek mod: ${dstIp}:${dstPort} hedefine oturum aciliyor…`, 'log-info');
+
+    // 1. Create session
+    const sessRes = await callBackend('/api/session/new', { dst_ip: dstIp, dst_port: dstPort });
+    if (sessRes.status !== 'ok') {
+      log(`Oturum hatasi: ${sessRes.message || sessRes.status}`, 'log-fin');
+      setBusy(false);
+      return;
+    }
+    sessionId = sessRes.session_id;
+    log(`Oturum olusturuldu. Kaynak port: ${sessRes.src_port}`, 'log-info');
+
+    // 2. Send SYN
+    log(`SYN gonderiliyor → ${dstIp}:${dstPort} ...`, 'log-syn');
+    const synRes = await callBackend('/api/syn', { session_id: sessionId });
+
+    setBusy(false);
+
+    if (synRes.status === 'timeout') {
+      log(`Zaman asimi: Sunucu yanit vermedi (SYN-ACK bekleniyor).`, 'log-fin');
+      sessionId = null;
+      return;
+    }
+    if (synRes.status === 'rst') {
+      log(`RST alindi: Port kapali veya reddetildi.`, 'log-fin');
+      setFlags('0','0','0','1');
+      renderPacketDetail(synRes.received, 'SERVER→CLIENT');
+      sessionId = null;
+      return;
+    }
+    if (synRes.status !== 'ok') {
+      log(`Hata: ${synRes.message || synRes.status}`, 'log-fin');
+      sessionId = null;
+      return;
+    }
+
+    // Success
+    hsStep = 1;
+    const s = synRes.sent;
+    const r = synRes.received;
+
+    showPacketRow('row-syn');
+    updateDiagramLabel('row-syn', `SYN &nbsp;|&nbsp; seq=${s.seq}`);
+    setConnState('SYN_SENT', 'state-syn-sent');
+    setActorState('client-state', 'SYN_SENT', true);
+    setActorState('server-state', 'SYN_RECEIVED', false);
+    setFlags('1','0','0','0');
+
+    log(`CLIENT → SERVER : [SYN] seq=${s.seq}, sport=${s.src_port}, TTL=${s.ttl}`, 'log-syn');
+
+    if (r && r.src_ip) {
+      showPacketRow('row-synack');
+      updateDiagramLabel('row-synack', `SYN-ACK &nbsp;|&nbsp; seq=${r.seq}, ack=${r.ack}`);
+      log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
+      setFlags('1','1','0','0');
+      renderPacketDetail(r, 'SERVER→CLIENT');
+    }
+
+    document.getElementById('btn-synack').disabled = false;
+    document.getElementById('btn-fin').disabled    = true;
+
+  } else {
+    // ── Simulation mode ─────────────────────────────────────
+    hsStep = 1;
+    document.getElementById('btn-syn').disabled    = true;
+    document.getElementById('btn-synack').disabled = false;
+    document.getElementById('btn-fin').disabled    = true;
+
+    showPacketRow('row-syn');
+    setConnState('SYN_SENT', 'state-syn-sent');
+    setActorState('client-state', 'SYN_SENT', true);
+    setActorState('server-state', 'SYN_RECEIVED', false);
+    setFlags('1','0','0','0');
+
+    showDetail([
+      ['Kaynak Port', '54321'],
+      ['Hedef Port', '80'],
+      ['Sequence No', '0'],
+      ['Ack No', '0'],
+      ['Flags', 'SYN=1'],
+      ['Window', '65535'],
+    ]);
+
+    log('CLIENT → SERVER : [SYN] seq=0, SYN=1, ACK=0', 'log-syn');
+    log('Istemci baglanti istegi gonderdi, SYN_SENT durumuna gecti.', 'log-info');
+  }
+}
+
+/* ── sendSYNACK (real = ACK only) ────────────────────────────── */
+async function sendSYNACK() {
+  if (hsStep !== 1) return;
+
+  if (mode === 'real') {
+    if (!sessionId) { log('Hata: Aktif oturum yok.', 'log-fin'); return; }
+    setBusy(true);
+    log('ACK gonderiliyor…', 'log-ack');
+
+    const res = await callBackend('/api/ack', { session_id: sessionId });
+    setBusy(false);
+
+    if (res.status !== 'ok') {
+      log(`Hata: ${res.message || res.status}`, 'log-fin');
+      return;
+    }
+
+    hsStep = 2;
+    const s = res.sent;
+    showPacketRow('row-ack');
+    updateDiagramLabel('row-ack', `ACK &nbsp;|&nbsp; ack=${s.ack}`);
+    setConnState('ESTABLISHED', 'state-established');
+    setActorState('client-state', 'ESTABLISHED', true);
+    setActorState('server-state', 'ESTABLISHED', true);
+    setFlags('0','1','0','0');
+
+    log(`CLIENT → SERVER : [ACK] seq=${s.seq}, ack=${s.ack}`, 'log-ack');
+    log('Baglanti ESTABLISHED! 3-way handshake tamamlandi.', 'log-ok');
+    renderPacketDetail(s, 'CLIENT→SERVER');
+
+    document.getElementById('btn-synack').disabled = true;
+    document.getElementById('btn-fin').disabled    = false;
+
+  } else {
+    // ── Simulation mode ─────────────────────────────────────
+    hsStep = 2;
+    document.getElementById('btn-syn').disabled    = true;
+    document.getElementById('btn-synack').disabled = true;
+    document.getElementById('btn-fin').disabled    = false;
+
+    showPacketRow('row-synack');
+    setTimeout(() => showPacketRow('row-ack'), 500);
+
+    setConnState('ESTABLISHED', 'state-established');
+    setActorState('client-state', 'ESTABLISHED', true);
+    setActorState('server-state', 'ESTABLISHED', true);
+    setFlags('1','1','0','0');
+
+    showDetail([
+      ['Kaynak Port', '80'],
+      ['Hedef Port', '54321'],
+      ['Sequence No', '0'],
+      ['Ack No', '1'],
+      ['Flags', 'SYN=1 ACK=1'],
+      ['Window', '65535'],
+    ]);
+
+    log('SERVER → CLIENT : [SYN-ACK] seq=0, ack=1, SYN=1, ACK=1', 'log-synack');
+    log('Sunucu SYN-ACK gonderdi. Istemci ACK ile yanit verdi.', 'log-info');
+    setTimeout(() => {
+      log('CLIENT → SERVER : [ACK] ack=1, ACK=1', 'log-ack');
+      log('Baglanti ESTABLISHED! 3-way handshake tamamlandi.', 'log-ok');
+      setFlags('0','1','0','0');
+      showDetail([
+        ['Kaynak Port', '54321'],
+        ['Hedef Port', '80'],
+        ['Sequence No', '1'],
+        ['Ack No', '1'],
+        ['Flags', 'ACK=1'],
+        ['Window', '65535'],
+      ]);
+    }, 600);
+  }
+}
+
+/* ── sendFIN ─────────────────────────────────────────────────── */
+async function sendFIN() {
+  if (hsStep !== 2) return;
+
+  if (mode === 'real') {
+    if (!sessionId) { log('Hata: Aktif oturum yok.', 'log-fin'); return; }
+    setBusy(true);
+    log('FIN-ACK gonderiliyor…', 'log-fin');
+
+    const res = await callBackend('/api/fin', { session_id: sessionId });
+    setBusy(false);
+
+    hsStep = 3;
+    const s = res.sent;
+    const r = res.received;
+
+    showPacketRow('row-fin');
+    updateDiagramLabel('row-fin', `FIN &nbsp;|&nbsp; seq=${s.seq}`);
+    setConnState('FIN_WAIT_1', 'state-fin-wait');
+    setActorState('client-state', 'FIN_WAIT', true);
+    setActorState('server-state', 'CLOSE_WAIT', false);
+    setFlags('0','1','1','0');
+
+    log(`CLIENT → SERVER : [FIN-ACK] seq=${s.seq}, ack=${s.ack}`, 'log-fin');
+
+    if (res.status === 'timeout') {
+      log('Zaman asimi: Sunucu FIN-ACK yaniti vermedi.', 'log-info');
+    } else if (r && r.src_ip) {
+      log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
+      renderPacketDetail(r, 'SERVER→CLIENT');
+    }
+
+    setConnState('CLOSED', 'state-closed');
+    setActorState('client-state', 'CLOSED', false);
+    setActorState('server-state', 'CLOSED', false);
+    setFlags('0','0','0','0');
+    log('Baglanti tamamen kapatildi.', 'log-info');
+    sessionId = null;
+
+  } else {
+    // ── Simulation mode ─────────────────────────────────────
+    hsStep = 3;
+    document.getElementById('btn-syn').disabled    = true;
+    document.getElementById('btn-synack').disabled = true;
+    document.getElementById('btn-fin').disabled    = true;
+
+    showPacketRow('row-fin');
+    setConnState('FIN_WAIT_1', 'state-fin-wait');
+    setActorState('client-state', 'FIN_WAIT', true);
+    setActorState('server-state', 'CLOSE_WAIT', false);
+    setFlags('0','1','1','0');
+
+    showDetail([
+      ['Kaynak Port', '54321'],
+      ['Hedef Port', '80'],
+      ['Sequence No', '1'],
+      ['Ack No', '1'],
+      ['Flags', 'FIN=1 ACK=1'],
+      ['Window', '0'],
+    ]);
+
+    log('CLIENT → SERVER : [FIN] seq=1, FIN=1, ACK=1', 'log-fin');
+    log('Istemci baglanti kapatma istegi gonderdi → FIN_WAIT_1', 'log-info');
+
+    setTimeout(() => {
+      log('SERVER → CLIENT : [ACK] — sunucu FIN\'i onayladi → CLOSE_WAIT', 'log-ack');
+    }, 600);
+    setTimeout(() => {
+      log('SERVER → CLIENT : [FIN-ACK] — sunucu de baglantisini kapatiyor', 'log-synack');
+      log('CLIENT → SERVER : [ACK] — TIME_WAIT → CLOSED', 'log-ack');
+      setConnState('CLOSED', 'state-closed');
+      setActorState('client-state', 'CLOSED', false);
+      setActorState('server-state', 'CLOSED', false);
+      setFlags('0','0','0','0');
+      log('Baglanti tamamen kapatildi.', 'log-info');
+    }, 1400);
+  }
+}
+
+/* ── resetHS ─────────────────────────────────────────────────── */
+async function resetHS() {
+  if (mode === 'real' && sessionId) {
+    try {
+      await callBackend('/api/reset', { session_id: sessionId });
+    } catch { /* ignore */ }
+    sessionId = null;
+  }
+
+  hsStep = 0;
+
+  ['row-syn','row-synack','row-ack','row-fin'].forEach(id => {
+    document.getElementById(id).classList.remove('visible');
+  });
+
+  // Reset diagram labels
+  updateDiagramLabel('row-syn',    'SYN &nbsp;|&nbsp; seq=0');
+  updateDiagramLabel('row-synack', 'SYN-ACK &nbsp;|&nbsp; seq=0, ack=1');
+  updateDiagramLabel('row-ack',    'ACK &nbsp;|&nbsp; ack=1');
+  updateDiagramLabel('row-fin',    'FIN &nbsp;|&nbsp; seq=1');
+
+  document.getElementById('btn-syn').disabled    = false;
+  document.getElementById('btn-synack').disabled = true;
+  document.getElementById('btn-fin').disabled    = true;
+
+  setConnState('CLOSED', 'state-closed');
+  setActorState('client-state', 'CLOSED', false);
+  setActorState('server-state', 'LISTEN', false);
+  setFlags('0','0','0','0');
+
+  document.getElementById('pkt-detail').style.display = 'none';
+  document.getElementById('log-panel').innerHTML = '';
+
+  log('Sifirlandi. Hazir.', 'log-info');
+}
+
+// Init
+log('Simulasyon hazir. SYN Gonder ile baslatin.', 'log-info');
+</script>
+</body>
+</html>
