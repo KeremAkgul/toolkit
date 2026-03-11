@@ -221,14 +221,11 @@ def send_ack():
     sess = sessions.get(sid)
     if not sess:
         return jsonify({"status": "error", "message": "unknown session"}), 404
-    if sess['step'] != 'SYN_SENT':
-        return jsonify({"status": "error", "message": "not in SYN_SENT state"}), 400
-
     dst_ip     = sess['dst_ip']
     dst_port   = sess['dst_port']
     src_port   = sess['src_port']
     client_isn = sess['client_isn']
-    server_isn = sess['server_isn']
+    server_isn = sess['server_isn'] or 0
     local_ip   = _get_local_ip(dst_ip)
 
     ack_pkt = IP(dst=dst_ip) / TCP(
@@ -270,14 +267,11 @@ def send_fin():
     sess = sessions.get(sid)
     if not sess:
         return jsonify({"status": "error", "message": "unknown session"}), 404
-    if sess['step'] != 'ESTABLISHED':
-        return jsonify({"status": "error", "message": "not in ESTABLISHED state"}), 400
-
     dst_ip     = sess['dst_ip']
     dst_port   = sess['dst_port']
     src_port   = sess['src_port']
     client_isn = sess['client_isn']
-    server_isn = sess['server_isn']
+    server_isn = sess['server_isn'] or 0
     local_ip   = _get_local_ip(dst_ip)
 
     fin_pkt = IP(dst=dst_ip) / TCP(

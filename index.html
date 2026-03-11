@@ -449,37 +449,6 @@
       font-weight: 600;
     }
 
-    /* ── Mode Toggle ── */
-    .mode-toggle {
-      display: flex;
-      gap: 6px;
-    }
-
-    .btn-mode {
-      flex: 1;
-      padding: 7px 10px;
-      border-radius: 5px;
-      border: 1px solid #30363d;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      background: #21262d;
-      color: #6e7681;
-      transition: all 0.15s;
-    }
-
-    .btn-mode.active-sim {
-      background: #1a3a5c;
-      border-color: #58a6ff;
-      color: #58a6ff;
-    }
-
-    .btn-mode.active-real {
-      background: #1a3a2a;
-      border-color: #3fb950;
-      color: #3fb950;
-    }
-
     /* ── Input fields ── */
     .input-row {
       display: flex;
@@ -521,23 +490,6 @@
       display: flex;
       flex-direction: column;
     }
-
-    .real-only { display: none; }
-
-    /* ── Status badge ── */
-    .backend-badge {
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      border: 1px solid #30363d;
-      color: #6e7681;
-      background: #21262d;
-      display: inline-block;
-      margin-top: 6px;
-    }
-
-    .backend-badge.ok  { color: #3fb950; border-color: #3fb95055; background: #1a3a2a55; }
-    .backend-badge.err { color: #f85149; border-color: #f8514955; background: #3a1a1a55; }
 
     /* Welcome page */
     .welcome-page {
@@ -592,7 +544,7 @@
   ══════════════════════════════════════════ -->
   <div class="tool-page active" id="page-handshake">
     <div class="tool-title">
-      TCP Three-Way Handshake Simulasyonu
+      TCP Handshake
       <span>RFC 793 — Baglanti kurma & kapatma</span>
     </div>
 
@@ -682,18 +634,8 @@
       <!-- Controls -->
       <div class="hs-controls-panel">
 
-        <!-- Mode toggle -->
-        <div class="hs-state-card">
-          <div class="card-title">Mod</div>
-          <div class="mode-toggle">
-            <button class="btn-mode active-sim" id="btn-mode-sim" onclick="setMode('sim')">Simulasyon</button>
-            <button class="btn-mode" id="btn-mode-real" onclick="setMode('real')">Gercek</button>
-          </div>
-          <div id="backend-status" class="backend-badge" style="display:none;"></div>
-        </div>
-
-        <!-- Target inputs (real mode only) -->
-        <div class="hs-state-card real-only" id="card-target">
+        <!-- Target inputs -->
+        <div class="hs-state-card" id="card-target">
           <div class="card-title">Hedef</div>
           <div class="input-row">
             <div class="input-group">
@@ -719,11 +661,11 @@
               <div class="btn-dot"></div>
               SYN Gonder (istemci)
             </button>
-            <button class="btn btn-synack" id="btn-synack" disabled onclick="sendSYNACK()">
+            <button class="btn btn-synack" id="btn-synack" onclick="sendACK()">
               <div class="btn-dot"></div>
-              <span id="label-synack">SYN-ACK Al / Gonder</span>
+              ACK Gonder
             </button>
-            <button class="btn btn-fin" id="btn-fin" disabled onclick="sendFIN()">
+            <button class="btn btn-fin" id="btn-fin" onclick="sendFIN()">
               <div class="btn-dot"></div>
               FIN Gonder (kapat)
             </button>
@@ -776,57 +718,18 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 /* ═══════════════════════════════════════════════
-   MODE & BACKEND
+   STATE
 ═══════════════════════════════════════════════ */
-let mode      = 'sim';   // 'sim' | 'real'
 let sessionId = null;
-const BACKEND = '';
 
-function setMode(m) {
-  mode = m;
-  document.getElementById('btn-mode-sim').className  = 'btn-mode' + (m === 'sim' ? ' active-sim' : '');
-  document.getElementById('btn-mode-real').className = 'btn-mode' + (m === 'real' ? ' active-real' : '');
-
-  document.querySelectorAll('.real-only').forEach(el => {
-    el.style.display = m === 'real' ? '' : 'none';
-  });
-
-  const label = document.getElementById('label-synack');
-  label.textContent = m === 'real' ? 'ACK Gonder' : 'SYN-ACK Al / Gonder';
-
-  if (m === 'real') checkBackend();
-  else document.getElementById('backend-status').style.display = 'none';
-
-  resetHS();
-}
-
-async function checkBackend() {
-  const badge = document.getElementById('backend-status');
-  badge.style.display = 'inline-block';
-  badge.className = 'backend-badge';
-  badge.textContent = 'backend kontrol ediliyor…';
-  try {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 3000);
-    const r = await fetch(BACKEND + '/api/health', { signal: ctrl.signal });
-    clearTimeout(tid);
-    if (r.ok) {
-      badge.className = 'backend-badge ok';
-      badge.textContent = 'backend: HAZIR';
-    } else {
-      throw new Error('non-ok');
-    }
-  } catch {
-    badge.className = 'backend-badge err';
-    badge.textContent = 'backend: KAPALI';
-  }
-}
-
+/* ═══════════════════════════════════════════════
+   BACKEND
+═══════════════════════════════════════════════ */
 async function callBackend(endpoint, body) {
   const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), 8000);
+  const tid  = setTimeout(() => ctrl.abort(), 10000);
   try {
-    const r = await fetch(BACKEND + endpoint, {
+    const r = await fetch(endpoint, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
@@ -845,33 +748,25 @@ async function callBackend(endpoint, body) {
   }
 }
 
-function renderPacketDetail(pkt, label) {
-  if (!pkt || !pkt.src_ip) return;
-  showDetail([
-    ['Yon',          label],
-    ['Kaynak',       `${pkt.src_ip}:${pkt.src_port}`],
-    ['Hedef',        `${pkt.dst_ip}:${pkt.dst_port}`],
-    ['Sequence No',  pkt.seq],
-    ['Ack No',       pkt.ack],
-    ['Flags',        pkt.flags],
-    ['Window',       pkt.window],
-    ['TTL',          pkt.ttl],
-  ]);
-}
+/* Auto-create session if none exists */
+async function ensureSession() {
+  if (sessionId) return true;
+  const dstIp   = document.getElementById('input-ip').value.trim();
+  const dstPort = parseInt(document.getElementById('input-port').value, 10);
+  if (!dstIp) { log('Hata: IP adresi giriniz.', 'log-fin'); return false; }
+  if (!dstPort || dstPort < 1 || dstPort > 65535) { log('Hata: Gecerli port giriniz (1-65535).', 'log-fin'); return false; }
 
-function updateDiagramLabel(rowId, text) {
-  const label = document.querySelector(`#${rowId} .packet-label`);
-  if (label) label.innerHTML = text;
+  const res = await callBackend('/api/session/new', { dst_ip: dstIp, dst_port: dstPort });
+  if (res.status !== 'ok') { log(`Oturum hatasi: ${res.message || res.status}`, 'log-fin'); return false; }
+  sessionId = res.session_id;
+  log(`Oturum olusturuldu — kaynak port: ${res.src_port}`, 'log-info');
+  return true;
 }
 
 /* ═══════════════════════════════════════════════
-   TCP HANDSHAKE SIMULATION
+   VISUALS
 ═══════════════════════════════════════════════ */
-let hsStep = 0; // 0=CLOSED, 1=SYN_SENT, 2=ESTABLISHED, 3=FIN_WAIT
-
-function now() {
-  return new Date().toLocaleTimeString('tr-TR', { hour12: false });
-}
+function now() { return new Date().toLocaleTimeString('tr-TR', { hour12: false }); }
 
 function log(msg, cls) {
   const panel = document.getElementById('log-panel');
@@ -918,306 +813,158 @@ function showDetail(fields) {
   ).join('');
 }
 
+function renderPacketDetail(pkt, label) {
+  if (!pkt || !pkt.src_ip) return;
+  showDetail([
+    ['Yon',         label],
+    ['Kaynak',      `${pkt.src_ip}:${pkt.src_port}`],
+    ['Hedef',       `${pkt.dst_ip}:${pkt.dst_port}`],
+    ['Sequence No', pkt.seq],
+    ['Ack No',      pkt.ack],
+    ['Flags',       pkt.flags],
+    ['Window',      pkt.window],
+    ['TTL',         pkt.ttl],
+  ]);
+}
+
+function updateDiagramLabel(rowId, text) {
+  const label = document.querySelector(`#${rowId} .packet-label`);
+  if (label) label.innerHTML = text;
+}
+
 function setBusy(busy) {
   ['btn-syn','btn-synack','btn-fin','btn-reset'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (busy) { btn._prevDisabled = btn.disabled; btn.disabled = true; }
-    else       { btn.disabled = btn._prevDisabled || false; }
+    document.getElementById(id).disabled = busy;
   });
 }
 
-/* ── sendSYN ─────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   PACKET SENDERS
+═══════════════════════════════════════════════ */
+
 async function sendSYN() {
-  if (hsStep !== 0) return;
+  setBusy(true);
+  if (!await ensureSession()) { setBusy(false); return; }
 
-  if (mode === 'real') {
-    const dstIp   = document.getElementById('input-ip').value.trim();
-    const dstPort = parseInt(document.getElementById('input-port').value, 10);
+  const dstIp   = document.getElementById('input-ip').value.trim();
+  const dstPort = document.getElementById('input-port').value;
+  log(`SYN gonderiliyor → ${dstIp}:${dstPort} ...`, 'log-syn');
 
-    if (!dstIp) { log('Hata: IP adresi giriniz.', 'log-fin'); return; }
-    if (!dstPort || dstPort < 1 || dstPort > 65535) { log('Hata: Gecerli port giriniz (1-65535).', 'log-fin'); return; }
+  const res = await callBackend('/api/syn', { session_id: sessionId });
+  setBusy(false);
 
-    setBusy(true);
-    log(`Gercek mod: ${dstIp}:${dstPort} hedefine oturum aciliyor…`, 'log-info');
-
-    // 1. Create session
-    const sessRes = await callBackend('/api/session/new', { dst_ip: dstIp, dst_port: dstPort });
-    if (sessRes.status !== 'ok') {
-      log(`Oturum hatasi: ${sessRes.message || sessRes.status}`, 'log-fin');
-      setBusy(false);
-      return;
-    }
-    sessionId = sessRes.session_id;
-    log(`Oturum olusturuldu. Kaynak port: ${sessRes.src_port}`, 'log-info');
-
-    // 2. Send SYN
-    log(`SYN gonderiliyor → ${dstIp}:${dstPort} ...`, 'log-syn');
-    const synRes = await callBackend('/api/syn', { session_id: sessionId });
-
-    setBusy(false);
-
-    if (synRes.status === 'timeout') {
-      log(`Zaman asimi: Sunucu yanit vermedi (SYN-ACK bekleniyor).`, 'log-fin');
-      sessionId = null;
-      return;
-    }
-    if (synRes.status === 'rst') {
-      log(`RST alindi: Port kapali veya reddetildi.`, 'log-fin');
-      setFlags('0','0','0','1');
-      renderPacketDetail(synRes.received, 'SERVER→CLIENT');
-      sessionId = null;
-      return;
-    }
-    if (synRes.status !== 'ok') {
-      log(`Hata: ${synRes.message || synRes.status}`, 'log-fin');
-      sessionId = null;
-      return;
-    }
-
-    // Success
-    hsStep = 1;
-    const s = synRes.sent;
-    const r = synRes.received;
-
-    showPacketRow('row-syn');
-    updateDiagramLabel('row-syn', `SYN &nbsp;|&nbsp; seq=${s.seq}`);
-    setConnState('SYN_SENT', 'state-syn-sent');
-    setActorState('client-state', 'SYN_SENT', true);
-    setActorState('server-state', 'SYN_RECEIVED', false);
-    setFlags('1','0','0','0');
-
-    log(`CLIENT → SERVER : [SYN] seq=${s.seq}, sport=${s.src_port}, TTL=${s.ttl}`, 'log-syn');
-
-    if (r && r.src_ip) {
-      showPacketRow('row-synack');
-      updateDiagramLabel('row-synack', `SYN-ACK &nbsp;|&nbsp; seq=${r.seq}, ack=${r.ack}`);
-      log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
-      setFlags('1','1','0','0');
-      renderPacketDetail(r, 'SERVER→CLIENT');
-    }
-
-    document.getElementById('btn-synack').disabled = false;
-    document.getElementById('btn-fin').disabled    = true;
-
-  } else {
-    // ── Simulation mode ─────────────────────────────────────
-    hsStep = 1;
-    document.getElementById('btn-syn').disabled    = true;
-    document.getElementById('btn-synack').disabled = false;
-    document.getElementById('btn-fin').disabled    = true;
-
-    showPacketRow('row-syn');
-    setConnState('SYN_SENT', 'state-syn-sent');
-    setActorState('client-state', 'SYN_SENT', true);
-    setActorState('server-state', 'SYN_RECEIVED', false);
-    setFlags('1','0','0','0');
-
-    showDetail([
-      ['Kaynak Port', '54321'],
-      ['Hedef Port', '80'],
-      ['Sequence No', '0'],
-      ['Ack No', '0'],
-      ['Flags', 'SYN=1'],
-      ['Window', '65535'],
-    ]);
-
-    log('CLIENT → SERVER : [SYN] seq=0, SYN=1, ACK=0', 'log-syn');
-    log('Istemci baglanti istegi gonderdi, SYN_SENT durumuna gecti.', 'log-info');
+  if (res.status === 'timeout') {
+    log('Zaman asimi: SYN-ACK gelmedi.', 'log-fin');
+    return;
   }
-}
+  if (res.status === 'rst') {
+    log('RST alindi: Port kapali veya reddetildi.', 'log-fin');
+    setFlags('0','0','0','1');
+    renderPacketDetail(res.received, 'SERVER→CLIENT');
+    return;
+  }
+  if (res.status !== 'ok') {
+    log(`Hata: ${res.message || res.status}`, 'log-fin');
+    return;
+  }
 
-/* ── sendSYNACK (real = ACK only) ────────────────────────────── */
-async function sendSYNACK() {
-  if (hsStep !== 1) return;
+  const s = res.sent, r = res.received;
+  showPacketRow('row-syn');
+  updateDiagramLabel('row-syn', `SYN &nbsp;|&nbsp; seq=${s.seq}`);
+  setConnState('SYN_SENT', 'state-syn-sent');
+  setActorState('client-state', 'SYN_SENT', true);
+  setActorState('server-state', 'SYN_RECEIVED', false);
+  setFlags('1','0','0','0');
+  log(`CLIENT → SERVER : [SYN] seq=${s.seq}, sport=${s.src_port}, TTL=${s.ttl}`, 'log-syn');
 
-  if (mode === 'real') {
-    if (!sessionId) { log('Hata: Aktif oturum yok.', 'log-fin'); return; }
-    setBusy(true);
-    log('ACK gonderiliyor…', 'log-ack');
-
-    const res = await callBackend('/api/ack', { session_id: sessionId });
-    setBusy(false);
-
-    if (res.status !== 'ok') {
-      log(`Hata: ${res.message || res.status}`, 'log-fin');
-      return;
-    }
-
-    hsStep = 2;
-    const s = res.sent;
-    showPacketRow('row-ack');
-    updateDiagramLabel('row-ack', `ACK &nbsp;|&nbsp; ack=${s.ack}`);
-    setConnState('ESTABLISHED', 'state-established');
-    setActorState('client-state', 'ESTABLISHED', true);
-    setActorState('server-state', 'ESTABLISHED', true);
-    setFlags('0','1','0','0');
-
-    log(`CLIENT → SERVER : [ACK] seq=${s.seq}, ack=${s.ack}`, 'log-ack');
-    log('Baglanti ESTABLISHED! 3-way handshake tamamlandi.', 'log-ok');
-    renderPacketDetail(s, 'CLIENT→SERVER');
-
-    document.getElementById('btn-synack').disabled = true;
-    document.getElementById('btn-fin').disabled    = false;
-
-  } else {
-    // ── Simulation mode ─────────────────────────────────────
-    hsStep = 2;
-    document.getElementById('btn-syn').disabled    = true;
-    document.getElementById('btn-synack').disabled = true;
-    document.getElementById('btn-fin').disabled    = false;
-
+  if (r && r.src_ip) {
     showPacketRow('row-synack');
-    setTimeout(() => showPacketRow('row-ack'), 500);
-
-    setConnState('ESTABLISHED', 'state-established');
-    setActorState('client-state', 'ESTABLISHED', true);
-    setActorState('server-state', 'ESTABLISHED', true);
+    updateDiagramLabel('row-synack', `SYN-ACK &nbsp;|&nbsp; seq=${r.seq}, ack=${r.ack}`);
+    log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
     setFlags('1','1','0','0');
-
-    showDetail([
-      ['Kaynak Port', '80'],
-      ['Hedef Port', '54321'],
-      ['Sequence No', '0'],
-      ['Ack No', '1'],
-      ['Flags', 'SYN=1 ACK=1'],
-      ['Window', '65535'],
-    ]);
-
-    log('SERVER → CLIENT : [SYN-ACK] seq=0, ack=1, SYN=1, ACK=1', 'log-synack');
-    log('Sunucu SYN-ACK gonderdi. Istemci ACK ile yanit verdi.', 'log-info');
-    setTimeout(() => {
-      log('CLIENT → SERVER : [ACK] ack=1, ACK=1', 'log-ack');
-      log('Baglanti ESTABLISHED! 3-way handshake tamamlandi.', 'log-ok');
-      setFlags('0','1','0','0');
-      showDetail([
-        ['Kaynak Port', '54321'],
-        ['Hedef Port', '80'],
-        ['Sequence No', '1'],
-        ['Ack No', '1'],
-        ['Flags', 'ACK=1'],
-        ['Window', '65535'],
-      ]);
-    }, 600);
+    renderPacketDetail(r, 'SERVER→CLIENT');
   }
 }
 
-/* ── sendFIN ─────────────────────────────────────────────────── */
+async function sendACK() {
+  setBusy(true);
+  if (!await ensureSession()) { setBusy(false); return; }
+
+  log('ACK gonderiliyor…', 'log-ack');
+  const res = await callBackend('/api/ack', { session_id: sessionId });
+  setBusy(false);
+
+  if (res.status !== 'ok') { log(`Hata: ${res.message || res.status}`, 'log-fin'); return; }
+
+  const s = res.sent;
+  showPacketRow('row-ack');
+  updateDiagramLabel('row-ack', `ACK &nbsp;|&nbsp; ack=${s.ack}`);
+  setConnState('ESTABLISHED', 'state-established');
+  setActorState('client-state', 'ESTABLISHED', true);
+  setActorState('server-state', 'ESTABLISHED', true);
+  setFlags('0','1','0','0');
+  log(`CLIENT → SERVER : [ACK] seq=${s.seq}, ack=${s.ack}`, 'log-ack');
+  log('Baglanti ESTABLISHED!', 'log-ok');
+  renderPacketDetail(s, 'CLIENT→SERVER');
+}
+
 async function sendFIN() {
-  if (hsStep !== 2) return;
+  setBusy(true);
+  if (!await ensureSession()) { setBusy(false); return; }
 
-  if (mode === 'real') {
-    if (!sessionId) { log('Hata: Aktif oturum yok.', 'log-fin'); return; }
-    setBusy(true);
-    log('FIN-ACK gonderiliyor…', 'log-fin');
+  log('FIN-ACK gonderiliyor…', 'log-fin');
+  const res = await callBackend('/api/fin', { session_id: sessionId });
+  setBusy(false);
 
-    const res = await callBackend('/api/fin', { session_id: sessionId });
-    setBusy(false);
+  const s = res.sent, r = res.received;
+  showPacketRow('row-fin');
+  if (s) updateDiagramLabel('row-fin', `FIN &nbsp;|&nbsp; seq=${s.seq}`);
+  setConnState('FIN_WAIT_1', 'state-fin-wait');
+  setActorState('client-state', 'FIN_WAIT', true);
+  setActorState('server-state', 'CLOSE_WAIT', false);
+  setFlags('0','1','1','0');
+  if (s) log(`CLIENT → SERVER : [FIN-ACK] seq=${s.seq}, ack=${s.ack}`, 'log-fin');
 
-    hsStep = 3;
-    const s = res.sent;
-    const r = res.received;
-
-    showPacketRow('row-fin');
-    updateDiagramLabel('row-fin', `FIN &nbsp;|&nbsp; seq=${s.seq}`);
-    setConnState('FIN_WAIT_1', 'state-fin-wait');
-    setActorState('client-state', 'FIN_WAIT', true);
-    setActorState('server-state', 'CLOSE_WAIT', false);
-    setFlags('0','1','1','0');
-
-    log(`CLIENT → SERVER : [FIN-ACK] seq=${s.seq}, ack=${s.ack}`, 'log-fin');
-
-    if (res.status === 'timeout') {
-      log('Zaman asimi: Sunucu FIN-ACK yaniti vermedi.', 'log-info');
-    } else if (r && r.src_ip) {
-      log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
-      renderPacketDetail(r, 'SERVER→CLIENT');
-    }
-
-    setConnState('CLOSED', 'state-closed');
-    setActorState('client-state', 'CLOSED', false);
-    setActorState('server-state', 'CLOSED', false);
-    setFlags('0','0','0','0');
-    log('Baglanti tamamen kapatildi.', 'log-info');
-    sessionId = null;
-
-  } else {
-    // ── Simulation mode ─────────────────────────────────────
-    hsStep = 3;
-    document.getElementById('btn-syn').disabled    = true;
-    document.getElementById('btn-synack').disabled = true;
-    document.getElementById('btn-fin').disabled    = true;
-
-    showPacketRow('row-fin');
-    setConnState('FIN_WAIT_1', 'state-fin-wait');
-    setActorState('client-state', 'FIN_WAIT', true);
-    setActorState('server-state', 'CLOSE_WAIT', false);
-    setFlags('0','1','1','0');
-
-    showDetail([
-      ['Kaynak Port', '54321'],
-      ['Hedef Port', '80'],
-      ['Sequence No', '1'],
-      ['Ack No', '1'],
-      ['Flags', 'FIN=1 ACK=1'],
-      ['Window', '0'],
-    ]);
-
-    log('CLIENT → SERVER : [FIN] seq=1, FIN=1, ACK=1', 'log-fin');
-    log('Istemci baglanti kapatma istegi gonderdi → FIN_WAIT_1', 'log-info');
-
-    setTimeout(() => {
-      log('SERVER → CLIENT : [ACK] — sunucu FIN\'i onayladi → CLOSE_WAIT', 'log-ack');
-    }, 600);
-    setTimeout(() => {
-      log('SERVER → CLIENT : [FIN-ACK] — sunucu de baglantisini kapatiyor', 'log-synack');
-      log('CLIENT → SERVER : [ACK] — TIME_WAIT → CLOSED', 'log-ack');
-      setConnState('CLOSED', 'state-closed');
-      setActorState('client-state', 'CLOSED', false);
-      setActorState('server-state', 'CLOSED', false);
-      setFlags('0','0','0','0');
-      log('Baglanti tamamen kapatildi.', 'log-info');
-    }, 1400);
+  if (res.status === 'timeout') {
+    log('Zaman asimi: Sunucu FIN-ACK yaniti vermedi.', 'log-info');
+  } else if (r && r.src_ip) {
+    log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
+    renderPacketDetail(r, 'SERVER→CLIENT');
   }
+
+  setConnState('CLOSED', 'state-closed');
+  setActorState('client-state', 'CLOSED', false);
+  setActorState('server-state', 'CLOSED', false);
+  setFlags('0','0','0','0');
+  log('Baglanti kapatildi.', 'log-info');
+  sessionId = null;
 }
 
-/* ── resetHS ─────────────────────────────────────────────────── */
 async function resetHS() {
-  if (mode === 'real' && sessionId) {
-    try {
-      await callBackend('/api/reset', { session_id: sessionId });
-    } catch { /* ignore */ }
+  if (sessionId) {
+    try { await callBackend('/api/reset', { session_id: sessionId }); } catch {}
     sessionId = null;
   }
-
-  hsStep = 0;
 
   ['row-syn','row-synack','row-ack','row-fin'].forEach(id => {
     document.getElementById(id).classList.remove('visible');
   });
-
-  // Reset diagram labels
   updateDiagramLabel('row-syn',    'SYN &nbsp;|&nbsp; seq=0');
   updateDiagramLabel('row-synack', 'SYN-ACK &nbsp;|&nbsp; seq=0, ack=1');
   updateDiagramLabel('row-ack',    'ACK &nbsp;|&nbsp; ack=1');
   updateDiagramLabel('row-fin',    'FIN &nbsp;|&nbsp; seq=1');
 
-  document.getElementById('btn-syn').disabled    = false;
-  document.getElementById('btn-synack').disabled = true;
-  document.getElementById('btn-fin').disabled    = true;
-
   setConnState('CLOSED', 'state-closed');
   setActorState('client-state', 'CLOSED', false);
   setActorState('server-state', 'LISTEN', false);
   setFlags('0','0','0','0');
-
   document.getElementById('pkt-detail').style.display = 'none';
   document.getElementById('log-panel').innerHTML = '';
-
   log('Sifirlandi. Hazir.', 'log-info');
 }
 
 // Init
-log('Simulasyon hazir. SYN Gonder ile baslatin.', 'log-info');
+log('Hazir. IP ve port girerek paket gonderin.', 'log-info');
 </script>
 </body>
 </html>
