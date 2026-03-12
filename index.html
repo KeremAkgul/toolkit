@@ -1779,10 +1779,18 @@ const DOS_ATTACKS = [
     name: 'SYN Flood',
     desc: 'Exhaust the target\'s TCP connection table with half-open connections by sending a flood of spoofed SYN packets.',
   },
-  // Future attack types can be added here:
-  // { id: 'udp_flood',  icon: '🌊', name: 'UDP Flood',  desc: 'Overwhelm target with UDP datagrams.' },
-  // { id: 'icmp_flood', icon: '🏓', name: 'ICMP Flood', desc: 'Ping flood to saturate bandwidth.' },
-  // { id: 'http_flood', icon: '🔁', name: 'HTTP Flood', desc: 'Application-layer flood with HTTP requests.' },
+  {
+    id:   'http_flood',
+    icon: '🌊',
+    name: 'HTTP Flood',
+    desc: 'Overwhelm the target with a high volume of HTTP requests to exhaust server threads and connections.',
+  },
+  {
+    id:   'slowloris',
+    icon: '🐌',
+    name: 'Slowloris',
+    desc: 'Hold many partial HTTP connections open simultaneously, exhausting the server\'s connection pool.',
+  },
 ];
 
 let dosJobId      = null;
@@ -1814,6 +1822,47 @@ function selectAttack(id) {
   renderDosConfig();
 }
 
+/* ── Per-attack extra config fields ── */
+function extraFieldsHtml(attackId, disabled) {
+  const d = disabled ? 'disabled' : '';
+  if (attackId === 'http_flood') {
+    return `
+    <div class="dos-fields-grid">
+      <div class="input-group">
+        <div class="input-label">HTTP Method</div>
+        <select class="input-field" id="dos-http-method" ${d}>
+          <option>GET</option><option>POST</option><option>PUT</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <div class="input-label">Path</div>
+        <input class="input-field" id="dos-http-path" type="text" placeholder="/" value="/" spellcheck="false" ${d} />
+      </div>
+    </div>`;
+  }
+  if (attackId === 'slowloris') {
+    return `
+    <div class="dos-fields-grid">
+      <div class="input-group">
+        <div class="input-label">Connections</div>
+        <input class="input-field" id="dos-connections" type="number" min="1" placeholder="150" value="150" ${d} />
+      </div>
+      <div class="input-group">
+        <div class="input-label">Keep-alive Interval (sec)</div>
+        <input class="input-field" id="dos-sleep-interval" type="number" min="1" placeholder="10" value="10" ${d} />
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+/* ── Stat label per attack ── */
+function sentLabel(attackId) {
+  if (attackId === 'slowloris') return 'Connections';
+  if (attackId === 'http_flood') return 'Requests Sent';
+  return 'Packets Sent';
+}
+
 /* ── Render config panel for selected attack ── */
 function renderDosConfig() {
   const atk    = DOS_ATTACKS.find(a => a.id === dosSelected);
@@ -1834,7 +1883,7 @@ function renderDosConfig() {
         <input class="input-field" id="dos-target-port" type="number" min="1" max="65535" placeholder="80" ${running ? 'disabled' : ''} />
       </div>
       <div class="input-group">
-        <div class="input-label">Rate (packets/sec)</div>
+        <div class="input-label">${atk.id === 'slowloris' ? 'Rate (ignored)' : 'Rate (req/sec)'}</div>
         <input class="input-field" id="dos-pps" type="number" min="1" placeholder="100" value="100" ${running ? 'disabled' : ''} />
       </div>
       <div class="input-group">
@@ -1842,6 +1891,8 @@ function renderDosConfig() {
         <input class="input-field" id="dos-duration" type="number" min="0" placeholder="30" value="30" ${running ? 'disabled' : ''} />
       </div>
     </div>
+
+    ${extraFieldsHtml(atk.id, running)}
 
     <div class="dos-action-row">
       <button class="btn-attack" id="btn-dos-start" onclick="startDos()" ${running ? 'disabled' : ''}>
@@ -1857,11 +1908,11 @@ function renderDosConfig() {
       <div class="dos-stats-grid">
         <div class="dos-stat-box">
           <div class="dos-stat-value" id="dos-stat-sent">0</div>
-          <div class="dos-stat-label">Packets Sent</div>
+          <div class="dos-stat-label">${sentLabel(atk.id)}</div>
         </div>
         <div class="dos-stat-box">
           <div class="dos-stat-value" id="dos-stat-pps">0</div>
-          <div class="dos-stat-label">Actual PPS</div>
+          <div class="dos-stat-label">Actual Rate</div>
         </div>
         <div class="dos-stat-box">
           <div class="dos-stat-value" id="dos-stat-elapsed">0s</div>
@@ -1890,14 +1941,29 @@ async function startDos() {
   if (!targetIp) { dosSetStatus('stopped', 'Error: Enter a target IP.'); return; }
   if (!targetPort || targetPort < 1 || targetPort > 65535) { dosSetStatus('stopped', 'Error: Enter a valid port (1–65535).'); return; }
 
-  dosSetStatus('running', `Starting ${dosSelected} → ${targetIp}:${targetPort} at ${pps} pps…`);
+  // Collect attack-specific extra fields
+  const extra = {};
+  if (dosSelected === 'http_flood') {
+    const m = document.getElementById('dos-http-method');
+    const p = document.getElementById('dos-http-path');
+    extra.method = m ? m.value : 'GET';
+    extra.path   = p ? (p.value || '/') : '/';
+  }
+  if (dosSelected === 'slowloris') {
+    const c = document.getElementById('dos-connections');
+    const i = document.getElementById('dos-sleep-interval');
+    extra.connections    = c ? (parseInt(c.value) || 150) : 150;
+    extra.sleep_interval = i ? (parseFloat(i.value) || 10) : 10;
+  }
+
+  dosSetStatus('running', `Starting ${dosSelected} → ${targetIp}:${targetPort}…`);
 
   let res;
   try {
     const r = await fetch('/api/dos/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attack_type: dosSelected, target_ip: targetIp, target_port: targetPort, pps, duration }),
+      body: JSON.stringify({ attack_type: dosSelected, target_ip: targetIp, target_port: targetPort, pps, duration, ...extra }),
     });
     res = await r.json();
   } catch (e) {
@@ -1912,13 +1978,26 @@ async function startDos() {
 
   dosJobId = res.job_id;
   renderDosConfig();
-  // Restore values after re-render
+  // Restore common values after re-render
   document.getElementById('dos-target-ip').value   = targetIp;
   document.getElementById('dos-target-port').value = targetPort;
   document.getElementById('dos-pps').value         = pps;
   document.getElementById('dos-duration').value    = duration;
+  // Restore attack-specific values
+  if (dosSelected === 'http_flood') {
+    const m = document.getElementById('dos-http-method');
+    const p = document.getElementById('dos-http-path');
+    if (m) m.value = extra.method;
+    if (p) p.value = extra.path;
+  }
+  if (dosSelected === 'slowloris') {
+    const c = document.getElementById('dos-connections');
+    const i = document.getElementById('dos-sleep-interval');
+    if (c) c.value = extra.connections;
+    if (i) i.value = extra.sleep_interval;
+  }
 
-  dosSetStatus('running', `Attack running — ${targetIp}:${targetPort} at ${pps} pps`);
+  dosSetStatus('running', `Attack running — ${targetIp}:${targetPort}`);
   dosPollingId = setInterval(pollDosStatus, 500);
 }
 
