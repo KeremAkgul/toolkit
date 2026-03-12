@@ -20,6 +20,9 @@ print("Root check: OK")
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from scapy.all import IP, TCP, sr1, send, conf
+import requests as req_lib
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 conf.verb = 0  # silence scapy output
 
@@ -346,6 +349,43 @@ def reset_session():
 @app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({"status": "ok"})
+
+
+# ── HTTP Request proxy ─────────────────────────────────────────────────────────
+
+@app.route('/api/http-request', methods=['POST'])
+def http_request_proxy():
+    data    = request.get_json(force=True)
+    method  = data.get('method', 'GET').upper()
+    url     = data.get('url', '').strip()
+    headers = data.get('headers', {})
+    body    = data.get('body', None)
+
+    if not url:
+        return jsonify({"status": "error", "message": "url required"}), 400
+
+    try:
+        resp = req_lib.request(
+            method, url,
+            headers=headers,
+            data=body.encode('utf-8') if body else None,
+            timeout=15,
+            allow_redirects=True,
+            verify=False,
+        )
+        return jsonify({
+            "status":           "ok",
+            "status_code":      resp.status_code,
+            "reason":           resp.reason,
+            "response_headers": dict(resp.headers),
+            "body":             resp.text,
+            "elapsed_ms":       int(resp.elapsed.total_seconds() * 1000),
+            "size_bytes":       len(resp.content),
+        })
+    except req_lib.exceptions.Timeout:
+        return jsonify({"status": "timeout", "message": "Request timed out (15s)"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────

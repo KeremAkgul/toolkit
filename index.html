@@ -491,6 +491,249 @@
       flex-direction: column;
     }
 
+    /* ── HTTP Request Tool ── */
+    .http-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .http-url-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .method-select {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 10px;
+      cursor: pointer;
+      outline: none;
+      min-width: 110px;
+    }
+
+    .method-select option { background: #21262d; }
+
+    .method-GET     { color: #58a6ff; border-color: #58a6ff55; background: #1a3a5c44; }
+    .method-POST    { color: #3fb950; border-color: #3fb95055; background: #1a3a2a44; }
+    .method-PUT     { color: #d2a679; border-color: #d2a67955; background: #2d201144; }
+    .method-DELETE  { color: #f85149; border-color: #f8514955; background: #3a1a1a44; }
+    .method-PATCH   { color: #bc8cff; border-color: #bc8cff55; background: #2a1a3a44; }
+    .method-HEAD    { color: #8b949e; border-color: #30363d; }
+    .method-OPTIONS { color: #8b949e; border-color: #30363d; }
+
+    .url-input {
+      flex: 1;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+      font-family: 'Courier New', monospace;
+      transition: border-color 0.15s;
+    }
+
+    .url-input:focus { border-color: #58a6ff; }
+    .url-input::placeholder { color: #484f58; }
+
+    .btn-send {
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: 1px solid #3fb950;
+      background: #1a3a2a;
+      color: #3fb950;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-send:hover  { background: #234d30; }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Tabs */
+    .http-tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid #30363d;
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6e7681;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover { color: #c9d1d9; }
+
+    .tab-btn.active {
+      color: #58a6ff;
+      border-bottom-color: #58a6ff;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Headers table */
+    .headers-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .headers-table th {
+      text-align: left;
+      padding: 6px 8px;
+      color: #6e7681;
+      font-weight: 600;
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .headers-table td { padding: 4px 4px; }
+
+    .header-input {
+      width: 100%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #c9d1d9;
+      font-size: 12px;
+      padding: 5px 8px;
+      outline: none;
+      font-family: 'Courier New', monospace;
+      transition: border-color 0.15s;
+    }
+
+    .header-input:focus { border-color: #58a6ff44; }
+    .header-input::placeholder { color: #484f58; }
+
+    .btn-remove-header {
+      background: none;
+      border: none;
+      color: #6e7681;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+
+    .btn-remove-header:hover { color: #f85149; }
+
+    .btn-add-header {
+      margin-top: 8px;
+      background: none;
+      border: 1px dashed #30363d;
+      border-radius: 5px;
+      color: #6e7681;
+      font-size: 12px;
+      padding: 6px 14px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.15s;
+    }
+
+    .btn-add-header:hover { border-color: #58a6ff55; color: #58a6ff; }
+
+    /* Body textarea */
+    .body-textarea {
+      width: 100%;
+      min-height: 140px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      padding: 10px 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .body-textarea:focus { border-color: #58a6ff44; }
+    .body-textarea::placeholder { color: #484f58; }
+
+    /* Response panel */
+    .http-response-panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 200px;
+    }
+
+    .resp-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .status-2xx { background: #1a3a2a; color: #3fb950; border: 1px solid #3fb95055; }
+    .status-3xx { background: #1a3a5c; color: #58a6ff; border: 1px solid #58a6ff55; }
+    .status-4xx { background: #2d2011; color: #d2a679; border: 1px solid #d2a67955; }
+    .status-5xx { background: #3a1a1a; color: #f85149; border: 1px solid #f8514955; }
+    .status-err { background: #21262d; color: #6e7681; border: 1px solid #30363d; }
+
+    .resp-stat { font-size: 11px; color: #6e7681; }
+    .resp-stat span { color: #8b949e; font-weight: 600; }
+
+    .resp-body {
+      flex: 1;
+      overflow-y: auto;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 5px;
+      padding: 10px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 11.5px;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 360px;
+      min-height: 80px;
+    }
+
+    .resp-placeholder {
+      color: #484f58;
+      font-size: 12px;
+      font-style: italic;
+    }
+
     /* Welcome page */
     .welcome-page {
       display: flex;
@@ -526,7 +769,10 @@
       <span class="icon">&#x1F4E1;</span>
       TCP 3-Way Handshake
     </div>
-    <!-- Yeni araçlar buraya eklenecek -->
+    <div class="menu-item" data-page="http">
+      <span class="icon">&#x1F310;</span>
+      HTTP Request
+    </div>
   </nav>
 </div>
 
@@ -536,7 +782,7 @@
   <!-- ── Welcome (fallback) ── -->
   <div class="welcome-page" id="page-welcome" style="display:none;">
     <h2>Network Toolkit</h2>
-    <p>Sol menuden bir arac secin.</p>
+    <p>Select a tool from the left menu.</p>
   </div>
 
   <!-- ══════════════════════════════════════════
@@ -700,6 +946,83 @@
       </div>
     </div>
   </div><!-- /page-handshake -->
+
+  <!-- ══════════════════════════════════════════
+       HTTP REQUEST TOOL
+  ══════════════════════════════════════════ -->
+  <div class="tool-page" id="page-http">
+    <div class="tool-title">
+      HTTP Request
+      <span>Build and send HTTP requests with custom headers &amp; body</span>
+    </div>
+
+    <div class="http-layout">
+
+      <!-- URL bar -->
+      <div class="http-url-bar">
+        <select class="method-select method-GET" id="http-method" onchange="httpMethodChange()">
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+          <option value="PATCH">PATCH</option>
+          <option value="HEAD">HEAD</option>
+          <option value="OPTIONS">OPTIONS</option>
+        </select>
+        <input class="url-input" id="http-url" type="text" placeholder="https://example.com/api/endpoint" spellcheck="false" />
+        <button class="btn-send" id="btn-send" onclick="httpSend()">Send</button>
+      </div>
+
+      <!-- Request tabs -->
+      <div style="background:#161b22; border:1px solid #30363d; border-radius:8px; padding:14px 16px;">
+        <div class="http-tabs">
+          <button class="tab-btn active" id="tab-headers" onclick="httpTab('headers')">Headers</button>
+          <button class="tab-btn" id="tab-body" onclick="httpTab('body')">Body</button>
+        </div>
+
+        <!-- Headers tab -->
+        <div class="tab-panel active" id="panel-headers" style="padding-top:10px;">
+          <table class="headers-table" id="headers-table">
+            <thead>
+              <tr>
+                <th style="width:42%">Key</th>
+                <th style="width:50%">Value</th>
+                <th style="width:8%"></th>
+              </tr>
+            </thead>
+            <tbody id="headers-body">
+              <!-- rows injected here -->
+            </tbody>
+          </table>
+          <button class="btn-add-header" onclick="addHeader()">+ Add Header</button>
+        </div>
+
+        <!-- Body tab -->
+        <div class="tab-panel" id="panel-body" style="padding-top:10px;">
+          <textarea class="body-textarea" id="http-body" placeholder="Request body (raw)"></textarea>
+        </div>
+      </div>
+
+      <!-- Response -->
+      <div class="http-response-panel" id="http-response-panel">
+        <div class="card-title">Response</div>
+        <div id="resp-meta-row" class="resp-meta" style="display:none;">
+          <span class="status-badge" id="resp-status-badge"></span>
+          <span class="resp-stat">Time: <span id="resp-time">—</span></span>
+          <span class="resp-stat">Size: <span id="resp-size">—</span></span>
+        </div>
+        <div class="http-tabs" id="resp-tabs" style="display:none;">
+          <button class="tab-btn active" id="rtab-body" onclick="httpRespTab('body')">Body</button>
+          <button class="tab-btn" id="rtab-headers" onclick="httpRespTab('resp-headers')">Headers</button>
+        </div>
+        <div id="resp-body-panel" class="resp-body resp-placeholder">
+          Response will appear here after sending a request.
+        </div>
+        <div id="resp-headers-panel" class="resp-body" style="display:none;"></div>
+      </div>
+
+    </div>
+  </div><!-- /page-http -->
 
 </div><!-- /main -->
 
@@ -965,6 +1288,155 @@ async function resetHS() {
 
 // Init
 log('Ready. Enter IP and port to send packets.', 'log-info');
+
+/* ═══════════════════════════════════════════════
+   HTTP REQUEST TOOL
+═══════════════════════════════════════════════ */
+
+const METHOD_CLASSES = {
+  GET: 'method-GET', POST: 'method-POST', PUT: 'method-PUT',
+  DELETE: 'method-DELETE', PATCH: 'method-PATCH',
+  HEAD: 'method-HEAD', OPTIONS: 'method-OPTIONS',
+};
+
+function httpMethodChange() {
+  const sel = document.getElementById('http-method');
+  sel.className = 'method-select ' + (METHOD_CLASSES[sel.value] || '');
+}
+
+function httpTab(name) {
+  ['headers','body'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('panel-' + t).classList.toggle('active', t === name);
+  });
+}
+
+function httpRespTab(name) {
+  ['body','resp-headers'].forEach(t => {
+    const id = t === 'body' ? 'rtab-body' : 'rtab-headers';
+    document.getElementById(id).classList.toggle('active', t === name);
+  });
+  document.getElementById('resp-body-panel').style.display    = name === 'body' ? '' : 'none';
+  document.getElementById('resp-headers-panel').style.display = name === 'resp-headers' ? '' : 'none';
+}
+
+function addHeader(key, value) {
+  const tbody = document.getElementById('headers-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="header-input" placeholder="Header name" value="${key || ''}"/></td>
+    <td><input class="header-input" placeholder="Value" value="${value || ''}"/></td>
+    <td><button class="btn-remove-header" onclick="removeHeader(this)" title="Remove">&#x2715;</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeHeader(btn) {
+  btn.closest('tr').remove();
+}
+
+function getHeaders() {
+  const headers = {};
+  document.querySelectorAll('#headers-body tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const k = inputs[0].value.trim();
+    const v = inputs[1].value.trim();
+    if (k) headers[k] = v;
+  });
+  return headers;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function statusClass(code) {
+  if (code >= 200 && code < 300) return 'status-2xx';
+  if (code >= 300 && code < 400) return 'status-3xx';
+  if (code >= 400 && code < 500) return 'status-4xx';
+  if (code >= 500) return 'status-5xx';
+  return 'status-err';
+}
+
+function tryPrettyJson(text) {
+  try { return JSON.stringify(JSON.parse(text), null, 2); } catch { return text; }
+}
+
+async function httpSend() {
+  const method = document.getElementById('http-method').value;
+  const url    = document.getElementById('http-url').value.trim();
+  const body   = document.getElementById('http-body').value || null;
+
+  if (!url) {
+    document.getElementById('resp-body-panel').className = 'resp-body resp-placeholder';
+    document.getElementById('resp-body-panel').textContent = 'Error: Enter a URL.';
+    return;
+  }
+
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  document.getElementById('resp-meta-row').style.display = 'none';
+  document.getElementById('resp-tabs').style.display     = 'none';
+  document.getElementById('resp-body-panel').className   = 'resp-body resp-placeholder';
+  document.getElementById('resp-body-panel').textContent = 'Waiting for response…';
+  document.getElementById('resp-body-panel').style.display    = '';
+  document.getElementById('resp-headers-panel').style.display = 'none';
+
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), 20000);
+
+  let res;
+  try {
+    const r = await fetch('/api/http-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method, url, headers: getHeaders(), body }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    res = await r.json();
+  } catch (e) {
+    clearTimeout(tid);
+    res = { status: 'error', message: e.name === 'AbortError' ? 'Request timed out' : e.message };
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Send';
+
+  if (res.status === 'error' || res.status === 'timeout') {
+    document.getElementById('resp-body-panel').className   = 'resp-body';
+    document.getElementById('resp-body-panel').textContent = `${res.status.toUpperCase()}: ${res.message}`;
+    return;
+  }
+
+  // Show meta
+  const badge = document.getElementById('resp-status-badge');
+  badge.textContent = `${res.status_code} ${res.reason}`;
+  badge.className   = 'status-badge ' + statusClass(res.status_code);
+  document.getElementById('resp-time').textContent = res.elapsed_ms + ' ms';
+  document.getElementById('resp-size').textContent = formatSize(res.size_bytes);
+  document.getElementById('resp-meta-row').style.display = '';
+  document.getElementById('resp-tabs').style.display = '';
+
+  // Body
+  document.getElementById('resp-body-panel').className   = 'resp-body';
+  document.getElementById('resp-body-panel').textContent = tryPrettyJson(res.body);
+  document.getElementById('resp-body-panel').style.display = '';
+
+  // Response headers
+  const hLines = Object.entries(res.response_headers)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n');
+  document.getElementById('resp-headers-panel').textContent = hLines;
+
+  // Switch to body tab
+  httpRespTab('body');
+  document.getElementById('rtab-body').classList.add('active');
+  document.getElementById('rtab-headers').classList.remove('active');
+}
 </script>
 </body>
 </html>
