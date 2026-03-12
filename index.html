@@ -734,6 +734,41 @@
       font-style: italic;
     }
 
+    /* Header key autocomplete */
+    .header-key-wrap { position: relative; }
+
+    .header-autocomplete {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      background: #21262d;
+      border: 1px solid #58a6ff55;
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      max-height: 180px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .header-ac-item {
+      padding: 5px 8px;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: #c9d1d9;
+      cursor: pointer;
+    }
+
+    .header-ac-item:hover, .header-ac-item.focused {
+      background: #1a3a5c;
+      color: #58a6ff;
+    }
+
+    /* Top-level Request / Response tabs */
+    .top-panel { display: none; }
+    .top-panel.active { display: flex; flex-direction: column; gap: 8px; }
+
     /* Welcome page */
     .welcome-page {
       display: flex;
@@ -1003,22 +1038,43 @@
         </div>
       </div>
 
-      <!-- Response -->
+      <!-- Request / Response panel -->
       <div class="http-response-panel" id="http-response-panel">
-        <div class="card-title">Response</div>
-        <div id="resp-meta-row" class="resp-meta" style="display:none;">
-          <span class="status-badge" id="resp-status-badge"></span>
-          <span class="resp-stat">Time: <span id="resp-time">—</span></span>
-          <span class="resp-stat">Size: <span id="resp-size">—</span></span>
+
+        <!-- Top-level tabs (hidden until first send) -->
+        <div class="http-tabs" id="top-tabs" style="display:none; margin-bottom:4px;">
+          <button class="tab-btn" id="top-tab-request" onclick="httpTopTab('request')">Request</button>
+          <button class="tab-btn active" id="top-tab-response" onclick="httpTopTab('response')">Response</button>
         </div>
-        <div class="http-tabs" id="resp-tabs" style="display:none;">
-          <button class="tab-btn active" id="rtab-body" onclick="httpRespTab('body')">Body</button>
-          <button class="tab-btn" id="rtab-headers" onclick="httpRespTab('resp-headers')">Headers</button>
+
+        <!-- REQUEST panel -->
+        <div class="top-panel" id="top-panel-request">
+          <div id="req-url-line" class="resp-body" style="min-height:unset; max-height:unset; padding:8px 12px; font-size:12px;"></div>
+          <div class="http-tabs">
+            <button class="tab-btn active" id="rqtab-headers" onclick="httpReqTab('headers')">Headers</button>
+            <button class="tab-btn" id="rqtab-body" onclick="httpReqTab('body')">Body</button>
+          </div>
+          <div id="req-headers-panel" class="resp-body"></div>
+          <div id="req-body-panel" class="resp-body" style="display:none;"></div>
         </div>
-        <div id="resp-body-panel" class="resp-body resp-placeholder">
-          Response will appear here after sending a request.
+
+        <!-- RESPONSE panel -->
+        <div class="top-panel active" id="top-panel-response">
+          <div id="resp-meta-row" class="resp-meta" style="display:none;">
+            <span class="status-badge" id="resp-status-badge"></span>
+            <span class="resp-stat">Time: <span id="resp-time">—</span></span>
+            <span class="resp-stat">Size: <span id="resp-size">—</span></span>
+          </div>
+          <div class="http-tabs" id="resp-tabs" style="display:none;">
+            <button class="tab-btn active" id="rtab-body" onclick="httpRespTab('body')">Body</button>
+            <button class="tab-btn" id="rtab-headers" onclick="httpRespTab('resp-headers')">Headers</button>
+          </div>
+          <div id="resp-body-panel" class="resp-body resp-placeholder">
+            Response will appear here after sending a request.
+          </div>
+          <div id="resp-headers-panel" class="resp-body" style="display:none;"></div>
         </div>
-        <div id="resp-headers-panel" class="resp-body" style="display:none;"></div>
+
       </div>
 
     </div>
@@ -1299,11 +1355,21 @@ const METHOD_CLASSES = {
   HEAD: 'method-HEAD', OPTIONS: 'method-OPTIONS',
 };
 
+const COMMON_HEADERS = [
+  'Accept', 'Accept-Encoding', 'Accept-Language', 'Authorization',
+  'Cache-Control', 'Connection', 'Content-Encoding', 'Content-Length',
+  'Content-Type', 'Cookie', 'Host', 'If-Modified-Since', 'If-None-Match',
+  'Origin', 'Pragma', 'Referer', 'Transfer-Encoding', 'User-Agent',
+  'X-API-Key', 'X-Auth-Token', 'X-Forwarded-For', 'X-Requested-With',
+];
+
+/* ── Method select ── */
 function httpMethodChange() {
   const sel = document.getElementById('http-method');
   sel.className = 'method-select ' + (METHOD_CLASSES[sel.value] || '');
 }
 
+/* ── Request input tabs (Headers / Body) ── */
 function httpTab(name) {
   ['headers','body'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === name);
@@ -1311,28 +1377,78 @@ function httpTab(name) {
   });
 }
 
-function httpRespTab(name) {
-  ['body','resp-headers'].forEach(t => {
-    const id = t === 'body' ? 'rtab-body' : 'rtab-headers';
-    document.getElementById(id).classList.toggle('active', t === name);
+/* ── Top-level Request / Response tabs ── */
+function httpTopTab(name) {
+  ['request','response'].forEach(t => {
+    document.getElementById('top-tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('top-panel-' + t).classList.toggle('active', t === name);
   });
+}
+
+/* ── Response sub-tabs ── */
+function httpRespTab(name) {
+  document.getElementById('rtab-body').classList.toggle('active', name === 'body');
+  document.getElementById('rtab-headers').classList.toggle('active', name === 'resp-headers');
   document.getElementById('resp-body-panel').style.display    = name === 'body' ? '' : 'none';
   document.getElementById('resp-headers-panel').style.display = name === 'resp-headers' ? '' : 'none';
 }
 
+/* ── Request panel sub-tabs ── */
+function httpReqTab(name) {
+  document.getElementById('rqtab-headers').classList.toggle('active', name === 'headers');
+  document.getElementById('rqtab-body').classList.toggle('active', name === 'body');
+  document.getElementById('req-headers-panel').style.display = name === 'headers' ? '' : 'none';
+  document.getElementById('req-body-panel').style.display    = name === 'body' ? '' : 'none';
+}
+
+/* ── Header autocomplete ── */
+function filterHeaderAC(input) {
+  const query = input.value.toLowerCase();
+  const drop  = input.nextElementSibling;
+  const matches = COMMON_HEADERS.filter(h => h.toLowerCase().includes(query));
+  if (!matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = matches.map(h =>
+    `<div class="header-ac-item" onmousedown="selectHeaderAC(this,'${h}')">${h}</div>`
+  ).join('');
+  drop.style.display = '';
+}
+
+function selectHeaderAC(item, value) {
+  const wrap  = item.closest('.header-key-wrap');
+  const input = wrap.querySelector('input');
+  input.value = value;
+  wrap.querySelector('.header-autocomplete').style.display = 'none';
+  // Move focus to value input
+  const row = wrap.closest('tr');
+  if (row) { const inputs = row.querySelectorAll('input'); if (inputs[1]) inputs[1].focus(); }
+}
+
+function hideHeaderAC(input, delay) {
+  setTimeout(() => {
+    const drop = input.nextElementSibling;
+    if (drop) drop.style.display = 'none';
+  }, delay);
+}
+
+/* ── Add / Remove header rows ── */
 function addHeader(key, value) {
   const tbody = document.getElementById('headers-body');
-  const tr = document.createElement('tr');
+  const tr    = document.createElement('tr');
   tr.innerHTML = `
-    <td><input class="header-input" placeholder="Header name" value="${key || ''}"/></td>
+    <td>
+      <div class="header-key-wrap">
+        <input class="header-input" placeholder="Header name" value="${key || ''}"
+          oninput="filterHeaderAC(this)" onfocus="filterHeaderAC(this)"
+          onblur="hideHeaderAC(this, 150)" />
+        <div class="header-autocomplete"></div>
+      </div>
+    </td>
     <td><input class="header-input" placeholder="Value" value="${value || ''}"/></td>
     <td><button class="btn-remove-header" onclick="removeHeader(this)" title="Remove">&#x2715;</button></td>`;
   tbody.appendChild(tr);
 }
 
-function removeHeader(btn) {
-  btn.closest('tr').remove();
-}
+function removeHeader(btn) { btn.closest('tr').remove(); }
 
 function getHeaders() {
   const headers = {};
@@ -1345,6 +1461,7 @@ function getHeaders() {
   return headers;
 }
 
+/* ── Helpers ── */
 function formatSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -1363,13 +1480,15 @@ function tryPrettyJson(text) {
   try { return JSON.stringify(JSON.parse(text), null, 2); } catch { return text; }
 }
 
+/* ── Send ── */
 async function httpSend() {
-  const method = document.getElementById('http-method').value;
-  const url    = document.getElementById('http-url').value.trim();
-  const body   = document.getElementById('http-body').value || null;
+  const method  = document.getElementById('http-method').value;
+  const url     = document.getElementById('http-url').value.trim();
+  const body    = document.getElementById('http-body').value || null;
+  const headers = getHeaders();
 
   if (!url) {
-    document.getElementById('resp-body-panel').className = 'resp-body resp-placeholder';
+    document.getElementById('resp-body-panel').className   = 'resp-body resp-placeholder';
     document.getElementById('resp-body-panel').textContent = 'Error: Enter a URL.';
     return;
   }
@@ -1378,6 +1497,19 @@ async function httpSend() {
   btn.disabled = true;
   btn.textContent = 'Sending…';
 
+  // Populate request panel
+  document.getElementById('req-url-line').textContent =
+    `${method}  ${url}`;
+  document.getElementById('req-headers-panel').textContent =
+    Object.entries(headers).map(([k,v]) => `${k}: ${v}`).join('\n') || '(no headers)';
+  document.getElementById('req-body-panel').textContent = body || '(no body)';
+  httpReqTab('headers');
+
+  // Show top tabs, stay on Response while waiting
+  document.getElementById('top-tabs').style.display = '';
+  httpTopTab('response');
+
+  // Reset response area
   document.getElementById('resp-meta-row').style.display = 'none';
   document.getElementById('resp-tabs').style.display     = 'none';
   document.getElementById('resp-body-panel').className   = 'resp-body resp-placeholder';
@@ -1393,7 +1525,7 @@ async function httpSend() {
     const r = await fetch('/api/http-request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ method, url, headers: getHeaders(), body }),
+      body: JSON.stringify({ method, url, headers, body }),
       signal: ctrl.signal,
     });
     clearTimeout(tid);
@@ -1412,7 +1544,7 @@ async function httpSend() {
     return;
   }
 
-  // Show meta
+  // Status badge
   const badge = document.getElementById('resp-status-badge');
   badge.textContent = `${res.status_code} ${res.reason}`;
   badge.className   = 'status-badge ' + statusClass(res.status_code);
@@ -1427,15 +1559,10 @@ async function httpSend() {
   document.getElementById('resp-body-panel').style.display = '';
 
   // Response headers
-  const hLines = Object.entries(res.response_headers)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n');
-  document.getElementById('resp-headers-panel').textContent = hLines;
+  document.getElementById('resp-headers-panel').textContent =
+    Object.entries(res.response_headers).map(([k,v]) => `${k}: ${v}`).join('\n');
 
-  // Switch to body tab
   httpRespTab('body');
-  document.getElementById('rtab-body').classList.add('active');
-  document.getElementById('rtab-headers').classList.remove('active');
 }
 </script>
 </body>
