@@ -521,7 +521,7 @@
     <p>Network Analysis Suite</p>
   </div>
   <nav id="menu">
-    <div class="menu-section">Protokoller</div>
+    <div class="menu-section">Tools</div>
     <div class="menu-item active" data-page="handshake">
       <span class="icon">&#x1F4E1;</span>
       TCP 3-Way Handshake
@@ -545,7 +545,7 @@
   <div class="tool-page active" id="page-handshake">
     <div class="tool-title">
       TCP Handshake
-      <span>RFC 793 — Baglanti kurma & kapatma</span>
+      <span>RFC 793 — Connection establishment &amp; teardown</span>
     </div>
 
     <div class="hs-layout">
@@ -620,7 +620,7 @@
 
         <!-- Packet Detail -->
         <div class="hs-state-card" id="pkt-detail" style="display:none;">
-          <div class="card-title">Son Paket Detayi</div>
+          <div class="card-title">Last Packet Details</div>
           <div class="pkt-info-grid" id="pkt-detail-grid"></div>
         </div>
 
@@ -636,10 +636,10 @@
 
         <!-- Target inputs -->
         <div class="hs-state-card" id="card-target">
-          <div class="card-title">Hedef</div>
+          <div class="card-title">Target</div>
           <div class="input-row">
             <div class="input-group">
-              <div class="input-label">IP Adresi</div>
+              <div class="input-label">IP Address</div>
               <input class="input-field" id="input-ip" type="text" placeholder="1.1.1.1" spellcheck="false" />
             </div>
             <div class="input-group">
@@ -650,27 +650,27 @@
         </div>
 
         <div class="hs-state-card">
-          <div class="card-title">Baglanti Durumu</div>
+          <div class="card-title">Connection State</div>
           <div class="state-display state-closed" id="conn-state">CLOSED</div>
         </div>
 
         <div class="hs-state-card">
-          <div class="card-title">Islemler</div>
+          <div class="card-title">Actions</div>
           <div class="btn-group">
             <button class="btn btn-syn" id="btn-syn" onclick="sendSYN()">
               <div class="btn-dot"></div>
-              SYN Gonder (istemci)
+              Send SYN
             </button>
             <button class="btn btn-synack" id="btn-synack" onclick="sendACK()">
               <div class="btn-dot"></div>
-              ACK Gonder
+              Send ACK
             </button>
             <button class="btn btn-fin" id="btn-fin" onclick="sendFIN()">
               <div class="btn-dot"></div>
-              FIN Gonder (kapat)
+              Send FIN
             </button>
             <button class="btn btn-reset" id="btn-reset" onclick="resetHS()">
-              &#8635; Sifirla
+              &#8635; Reset
             </button>
           </div>
         </div>
@@ -753,13 +753,13 @@ async function ensureSession() {
   if (sessionId) return true;
   const dstIp   = document.getElementById('input-ip').value.trim();
   const dstPort = parseInt(document.getElementById('input-port').value, 10);
-  if (!dstIp) { log('Hata: IP adresi giriniz.', 'log-fin'); return false; }
-  if (!dstPort || dstPort < 1 || dstPort > 65535) { log('Hata: Gecerli port giriniz (1-65535).', 'log-fin'); return false; }
+  if (!dstIp) { log('Error: Enter an IP address.', 'log-fin'); return false; }
+  if (!dstPort || dstPort < 1 || dstPort > 65535) { log('Error: Enter a valid port (1–65535).', 'log-fin'); return false; }
 
   const res = await callBackend('/api/session/new', { dst_ip: dstIp, dst_port: dstPort });
-  if (res.status !== 'ok') { log(`Oturum hatasi: ${res.message || res.status}`, 'log-fin'); return false; }
+  if (res.status !== 'ok') { log(`Session error: ${res.message || res.status}`, 'log-fin'); return false; }
   sessionId = res.session_id;
-  log(`Oturum olusturuldu — kaynak port: ${res.src_port}`, 'log-info');
+  log(`Session created — source port: ${res.src_port}`, 'log-info');
   return true;
 }
 
@@ -816,9 +816,9 @@ function showDetail(fields) {
 function renderPacketDetail(pkt, label) {
   if (!pkt || !pkt.src_ip) return;
   showDetail([
-    ['Yon',         label],
-    ['Kaynak',      `${pkt.src_ip}:${pkt.src_port}`],
-    ['Hedef',       `${pkt.dst_ip}:${pkt.dst_port}`],
+    ['Direction',   label],
+    ['Source',      `${pkt.src_ip}:${pkt.src_port}`],
+    ['Destination', `${pkt.dst_ip}:${pkt.dst_port}`],
     ['Sequence No', pkt.seq],
     ['Ack No',      pkt.ack],
     ['Flags',       pkt.flags],
@@ -848,23 +848,23 @@ async function sendSYN() {
 
   const dstIp   = document.getElementById('input-ip').value.trim();
   const dstPort = document.getElementById('input-port').value;
-  log(`SYN gonderiliyor → ${dstIp}:${dstPort} ...`, 'log-syn');
+  log(`Sending SYN → ${dstIp}:${dstPort} ...`, 'log-syn');
 
   const res = await callBackend('/api/syn', { session_id: sessionId });
   setBusy(false);
 
   if (res.status === 'timeout') {
-    log('Zaman asimi: SYN-ACK gelmedi.', 'log-fin');
+    log('Timeout: No SYN-ACK received.', 'log-fin');
     return;
   }
   if (res.status === 'rst') {
-    log('RST alindi: Port kapali veya reddetildi.', 'log-fin');
+    log('RST received: Port closed or refused.', 'log-fin');
     setFlags('0','0','0','1');
     renderPacketDetail(res.received, 'SERVER→CLIENT');
     return;
   }
   if (res.status !== 'ok') {
-    log(`Hata: ${res.message || res.status}`, 'log-fin');
+    log(`Error: ${res.message || res.status}`, 'log-fin');
     return;
   }
 
@@ -890,11 +890,11 @@ async function sendACK() {
   setBusy(true);
   if (!await ensureSession()) { setBusy(false); return; }
 
-  log('ACK gonderiliyor…', 'log-ack');
+  log('Sending ACK…', 'log-ack');
   const res = await callBackend('/api/ack', { session_id: sessionId });
   setBusy(false);
 
-  if (res.status !== 'ok') { log(`Hata: ${res.message || res.status}`, 'log-fin'); return; }
+  if (res.status !== 'ok') { log(`Error: ${res.message || res.status}`, 'log-fin'); return; }
 
   const s = res.sent;
   showPacketRow('row-ack');
@@ -904,7 +904,7 @@ async function sendACK() {
   setActorState('server-state', 'ESTABLISHED', true);
   setFlags('0','1','0','0');
   log(`CLIENT → SERVER : [ACK] seq=${s.seq}, ack=${s.ack}`, 'log-ack');
-  log('Baglanti ESTABLISHED!', 'log-ok');
+  log('Connection ESTABLISHED!', 'log-ok');
   renderPacketDetail(s, 'CLIENT→SERVER');
 }
 
@@ -912,7 +912,7 @@ async function sendFIN() {
   setBusy(true);
   if (!await ensureSession()) { setBusy(false); return; }
 
-  log('FIN-ACK gonderiliyor…', 'log-fin');
+  log('Sending FIN-ACK…', 'log-fin');
   const res = await callBackend('/api/fin', { session_id: sessionId });
   setBusy(false);
 
@@ -926,7 +926,7 @@ async function sendFIN() {
   if (s) log(`CLIENT → SERVER : [FIN-ACK] seq=${s.seq}, ack=${s.ack}`, 'log-fin');
 
   if (res.status === 'timeout') {
-    log('Zaman asimi: Sunucu FIN-ACK yaniti vermedi.', 'log-info');
+    log('Timeout: No FIN-ACK from server.', 'log-info');
   } else if (r && r.src_ip) {
     log(`SERVER → CLIENT : [${r.flags}] seq=${r.seq}, ack=${r.ack}, TTL=${r.ttl}`, 'log-synack');
     renderPacketDetail(r, 'SERVER→CLIENT');
@@ -936,7 +936,7 @@ async function sendFIN() {
   setActorState('client-state', 'CLOSED', false);
   setActorState('server-state', 'CLOSED', false);
   setFlags('0','0','0','0');
-  log('Baglanti kapatildi.', 'log-info');
+  log('Connection closed.', 'log-info');
   sessionId = null;
 }
 
@@ -960,11 +960,11 @@ async function resetHS() {
   setFlags('0','0','0','0');
   document.getElementById('pkt-detail').style.display = 'none';
   document.getElementById('log-panel').innerHTML = '';
-  log('Sifirlandi. Hazir.', 'log-info');
+  log('Reset. Ready.', 'log-info');
 }
 
 // Init
-log('Hazir. IP ve port girerek paket gonderin.', 'log-info');
+log('Ready. Enter IP and port to send packets.', 'log-info');
 </script>
 </body>
 </html>
