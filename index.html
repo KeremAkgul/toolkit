@@ -769,6 +769,181 @@
     .top-panel { display: none; }
     .top-panel.active { display: flex; flex-direction: column; gap: 8px; }
 
+    /* ── DoS Tool ── */
+    .dos-layout {
+      display: flex;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .dos-attack-list {
+      width: 210px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dos-attack-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+
+    .dos-attack-card:hover:not(.active) { border-color: #58a6ff55; }
+
+    .dos-attack-card.active {
+      border-color: #f85149;
+      background: #2d1b1b;
+    }
+
+    .dos-attack-icon { font-size: 20px; margin-bottom: 6px; }
+
+    .dos-attack-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #c9d1d9;
+    }
+
+    .dos-attack-desc {
+      font-size: 11px;
+      color: #8b949e;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .dos-config-panel {
+      flex: 1;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .dos-config-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e6edf3;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .dos-config-title span {
+      font-size: 11px;
+      font-weight: 400;
+      color: #6e7681;
+      margin-left: 8px;
+    }
+
+    .dos-fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .dos-action-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-attack {
+      padding: 10px 24px;
+      border-radius: 6px;
+      border: 1px solid #f85149;
+      background: #3a1a1a;
+      color: #f85149;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-attack:hover:not(:disabled) { background: #4d2020; }
+    .btn-attack:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-stop-attack {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #c9d1d9;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-stop-attack:hover:not(:disabled) { background: #2d333b; border-color: #8b949e; }
+    .btn-stop-attack:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .dos-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .dos-stat-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+
+    .dos-stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f85149;
+      font-family: 'Courier New', monospace;
+      min-height: 30px;
+    }
+
+    .dos-stat-label {
+      font-size: 10px;
+      color: #6e7681;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .dos-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.idle    { background: #484f58; }
+    .status-dot.running { background: #3fb950; animation: dos-pulse 1s infinite; }
+    .status-dot.stopped { background: #f85149; }
+
+    @keyframes dos-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
     /* Welcome page */
     .welcome-page {
       display: flex;
@@ -807,6 +982,10 @@
     <div class="menu-item" data-page="http">
       <span class="icon">&#x1F310;</span>
       HTTP Request
+    </div>
+    <div class="menu-item" data-page="dos">
+      <span class="icon">&#x26A1;</span>
+      Common DoS Vectors
     </div>
   </nav>
 </div>
@@ -1079,6 +1258,30 @@
 
     </div>
   </div><!-- /page-http -->
+
+  <!-- ══════════════════════════════════════════
+       COMMON DoS VECTORS
+  ══════════════════════════════════════════ -->
+  <div class="tool-page" id="page-dos">
+    <div class="tool-title">
+      Common DoS Vectors
+      <span>Denial-of-service attack simulation — authorized testing only</span>
+    </div>
+
+    <div class="dos-layout">
+
+      <!-- Attack type list -->
+      <div class="dos-attack-list" id="dos-attack-list">
+        <!-- Attack cards injected by JS -->
+      </div>
+
+      <!-- Config + stats panel -->
+      <div class="dos-config-panel" id="dos-config-panel">
+        <!-- Injected by selectAttack() -->
+      </div>
+
+    </div>
+  </div><!-- /page-dos -->
 
 </div><!-- /main -->
 
@@ -1564,6 +1767,232 @@ async function httpSend() {
 
   httpRespTab('body');
 }
+
+/* ═══════════════════════════════════════════════
+   COMMON DoS VECTORS TOOL
+═══════════════════════════════════════════════ */
+
+const DOS_ATTACKS = [
+  {
+    id:   'syn_flood',
+    icon: '⚡',
+    name: 'SYN Flood',
+    desc: 'Exhaust the target\'s TCP connection table with half-open connections by sending a flood of spoofed SYN packets.',
+  },
+  // Future attack types can be added here:
+  // { id: 'udp_flood',  icon: '🌊', name: 'UDP Flood',  desc: 'Overwhelm target with UDP datagrams.' },
+  // { id: 'icmp_flood', icon: '🏓', name: 'ICMP Flood', desc: 'Ping flood to saturate bandwidth.' },
+  // { id: 'http_flood', icon: '🔁', name: 'HTTP Flood', desc: 'Application-layer flood with HTTP requests.' },
+];
+
+let dosJobId      = null;
+let dosPollingId  = null;
+let dosSelected   = null;
+
+/* ── Render attack card list ── */
+function initDosPage() {
+  const list = document.getElementById('dos-attack-list');
+  list.innerHTML = DOS_ATTACKS.map(a => `
+    <div class="dos-attack-card${dosSelected === a.id ? ' active' : ''}" id="dos-card-${a.id}"
+         onclick="selectAttack('${a.id}')">
+      <div class="dos-attack-icon">${a.icon}</div>
+      <div class="dos-attack-name">${a.name}</div>
+      <div class="dos-attack-desc">${a.desc}</div>
+    </div>
+  `).join('');
+
+  if (!dosSelected && DOS_ATTACKS.length) selectAttack(DOS_ATTACKS[0].id);
+  else if (dosSelected) renderDosConfig();
+}
+
+/* ── Select attack type ── */
+function selectAttack(id) {
+  dosSelected = id;
+  document.querySelectorAll('.dos-attack-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('dos-card-' + id);
+  if (card) card.classList.add('active');
+  renderDosConfig();
+}
+
+/* ── Render config panel for selected attack ── */
+function renderDosConfig() {
+  const atk    = DOS_ATTACKS.find(a => a.id === dosSelected);
+  if (!atk) return;
+  const panel  = document.getElementById('dos-config-panel');
+  const running = dosJobId !== null;
+
+  panel.innerHTML = `
+    <div class="dos-config-title">${atk.icon} ${atk.name} <span>${atk.desc}</span></div>
+
+    <div class="dos-fields-grid">
+      <div class="input-group">
+        <div class="input-label">Target IP</div>
+        <input class="input-field" id="dos-target-ip" type="text" placeholder="192.168.1.1" spellcheck="false" ${running ? 'disabled' : ''} />
+      </div>
+      <div class="input-group">
+        <div class="input-label">Target Port</div>
+        <input class="input-field" id="dos-target-port" type="number" min="1" max="65535" placeholder="80" ${running ? 'disabled' : ''} />
+      </div>
+      <div class="input-group">
+        <div class="input-label">Rate (packets/sec)</div>
+        <input class="input-field" id="dos-pps" type="number" min="1" placeholder="100" value="100" ${running ? 'disabled' : ''} />
+      </div>
+      <div class="input-group">
+        <div class="input-label">Duration (sec, 0 = ∞)</div>
+        <input class="input-field" id="dos-duration" type="number" min="0" placeholder="30" value="30" ${running ? 'disabled' : ''} />
+      </div>
+    </div>
+
+    <div class="dos-action-row">
+      <button class="btn-attack" id="btn-dos-start" onclick="startDos()" ${running ? 'disabled' : ''}>
+        ▶ Start Attack
+      </button>
+      <button class="btn-stop-attack" id="btn-dos-stop" onclick="stopDos()" ${!running ? 'disabled' : ''}>
+        ■ Stop
+      </button>
+    </div>
+
+    <div style="margin-top:4px;">
+      <div class="card-title">Live Statistics</div>
+      <div class="dos-stats-grid">
+        <div class="dos-stat-box">
+          <div class="dos-stat-value" id="dos-stat-sent">0</div>
+          <div class="dos-stat-label">Packets Sent</div>
+        </div>
+        <div class="dos-stat-box">
+          <div class="dos-stat-value" id="dos-stat-pps">0</div>
+          <div class="dos-stat-label">Actual PPS</div>
+        </div>
+        <div class="dos-stat-box">
+          <div class="dos-stat-value" id="dos-stat-elapsed">0s</div>
+          <div class="dos-stat-label">Elapsed</div>
+        </div>
+        <div class="dos-stat-box">
+          <div class="dos-stat-value" id="dos-stat-status" style="font-size:13px; padding-top:6px;">Idle</div>
+          <div class="dos-stat-label">Status</div>
+        </div>
+      </div>
+      <div class="dos-status-row" style="margin-top:10px;">
+        <span class="status-dot idle" id="dos-dot"></span>
+        <span id="dos-status-text">Ready — configure target and press Start Attack.</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Start attack ── */
+async function startDos() {
+  const targetIp   = document.getElementById('dos-target-ip').value.trim();
+  const targetPort = parseInt(document.getElementById('dos-target-port').value, 10);
+  const pps        = parseFloat(document.getElementById('dos-pps').value) || 100;
+  const duration   = parseFloat(document.getElementById('dos-duration').value) || 0;
+
+  if (!targetIp) { dosSetStatus('stopped', 'Error: Enter a target IP.'); return; }
+  if (!targetPort || targetPort < 1 || targetPort > 65535) { dosSetStatus('stopped', 'Error: Enter a valid port (1–65535).'); return; }
+
+  dosSetStatus('running', `Starting ${dosSelected} → ${targetIp}:${targetPort} at ${pps} pps…`);
+
+  let res;
+  try {
+    const r = await fetch('/api/dos/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attack_type: dosSelected, target_ip: targetIp, target_port: targetPort, pps, duration }),
+    });
+    res = await r.json();
+  } catch (e) {
+    dosSetStatus('stopped', 'Error: ' + e.message);
+    return;
+  }
+
+  if (res.status !== 'ok') {
+    dosSetStatus('stopped', 'Error: ' + (res.message || res.status));
+    return;
+  }
+
+  dosJobId = res.job_id;
+  renderDosConfig();
+  // Restore values after re-render
+  document.getElementById('dos-target-ip').value   = targetIp;
+  document.getElementById('dos-target-port').value = targetPort;
+  document.getElementById('dos-pps').value         = pps;
+  document.getElementById('dos-duration').value    = duration;
+
+  dosSetStatus('running', `Attack running — ${targetIp}:${targetPort} at ${pps} pps`);
+  dosPollingId = setInterval(pollDosStatus, 500);
+}
+
+/* ── Stop attack ── */
+async function stopDos() {
+  if (!dosJobId) return;
+  clearInterval(dosPollingId);
+  dosPollingId = null;
+
+  try {
+    const r = await fetch('/api/dos/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: dosJobId }),
+    });
+    const res = await r.json();
+    if (res.stats) {
+      dosUpdateStats(res.stats.sent, 0, res.stats.elapsed);
+    }
+  } catch {}
+
+  dosJobId = null;
+  renderDosConfig();
+  dosSetStatus('stopped', 'Attack stopped.');
+}
+
+/* ── Poll status ── */
+async function pollDosStatus() {
+  if (!dosJobId) return;
+  try {
+    const r   = await fetch('/api/dos/status?job_id=' + dosJobId);
+    const res = await r.json();
+    dosUpdateStats(res.sent, res.pps_actual, res.elapsed);
+    if (res.status === 'stopped') {
+      clearInterval(dosPollingId);
+      dosPollingId = null;
+      dosJobId     = null;
+      renderDosConfig();
+      dosSetStatus('stopped', `Finished — ${res.sent} packets sent in ${res.elapsed}s.`);
+    }
+  } catch {}
+}
+
+/* ── Update stat boxes ── */
+function dosUpdateStats(sent, pps, elapsed) {
+  const s = document.getElementById('dos-stat-sent');
+  const p = document.getElementById('dos-stat-pps');
+  const e = document.getElementById('dos-stat-elapsed');
+  if (s) s.textContent = sent;
+  if (p) p.textContent = pps;
+  if (e) e.textContent = Math.round(elapsed) + 's';
+}
+
+/* ── Update status indicator ── */
+function dosSetStatus(state, text) {
+  const dot  = document.getElementById('dos-dot');
+  const txt  = document.getElementById('dos-status-text');
+  const statBox = document.getElementById('dos-stat-status');
+  if (dot) { dot.className = 'status-dot ' + state; }
+  if (txt) txt.textContent = text;
+  if (statBox) {
+    statBox.textContent = state === 'running' ? 'Running' : state === 'stopped' ? 'Stopped' : 'Idle';
+    statBox.style.color = state === 'running' ? '#3fb950' : state === 'stopped' ? '#f85149' : '#8b949e';
+  }
+}
+
+/* Initialize DoS page when it becomes active */
+document.querySelectorAll('.menu-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (item.dataset.page === 'dos') {
+      initDosPage();
+    }
+  });
+});
 </script>
 </body>
 </html>
